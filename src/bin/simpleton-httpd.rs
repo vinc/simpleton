@@ -1,30 +1,58 @@
 use std::borrow::ToOwned;
 use std::fs::File;
 use std::io::prelude::*;
-use std::net::{TcpListener, TcpStream};
+use std::net::{TcpListener, TcpStream, IpAddr};
 use std::path::{Path, PathBuf, Component};
 use std::str;
 use std::thread;
 use std::env;
 
+#[derive(Copy, Clone)]
+struct ServerOptions<'a> {
+    name: &'a str,
+    address: &'a str,
+    port: u16,
+    debug: bool
+}
+
+#[derive(Copy, Clone)]
+struct Request<'a> {
+    address: IpAddr,
+    method: &'a str,
+    uri: &'a str,
+    version: &'a str
+}
+
+#[derive(Clone)]
+struct Response<'a> {
+    status_code: u16,
+    reason_phrase: &'a str,
+    body: Vec<u8>,
+    size: usize
+}
+
 fn main() {
-    let mut debug = false;
+    let mut opts = ServerOptions {
+        name: "Simpleton HTTP Server",
+        address: "127.0.0.1",
+        port: 3000,
+        debug: false
+    };
 
     for arg in env::args() {
         if arg == "--debug" {
-            debug = true;
+            opts.debug = true;
         }
     }
 
-    let address = "127.0.0.1:3000";
-    let listener = TcpListener::bind(address).unwrap();
-    println!("Simpleton HTTP Server is listening on {}\n", address);
+    let listener = TcpListener::bind((opts.address, opts.port)).unwrap();
+    println!("{} is listening on {}:{}\n", opts.name, opts.address, opts.port);
 
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
                 thread::spawn(move|| {
-                    handle_client(stream, debug)
+                    handle_client(stream, opts)
                 });
             }
             Err(e) => {
@@ -36,13 +64,11 @@ fn main() {
     drop(listener);
 }
 
-fn handle_client(mut stream: TcpStream, debug: bool) {
-    if debug {
+fn handle_client(mut stream: TcpStream, opts: ServerOptions) {
+    if opts.debug {
         println!("");
     }
     
-    let req_address = stream.peer_addr().unwrap().ip();
-
     //let mut buf: Vec<u8> = vec![];
     //let _ = stream.read_to_end(&mut buf);
     let mut buf = [0; 256];
@@ -50,28 +76,39 @@ fn handle_client(mut stream: TcpStream, debug: bool) {
 
     let mut lines = str::from_utf8(&buf).unwrap().lines();
 
+    // Parse the request line
     let req_line = lines.next().unwrap();
-    //println!("> {}", req_line);
     let req_line_fields: Vec<&str> = req_line.split_whitespace().collect();
-    let req_method  = req_line_fields[0];
-    let req_uri     = req_line_fields[1];
-    let req_version = req_line_fields[2];
-
-    if debug {
-        println!("> {} {} {}", req_method, req_uri, req_version);
-        for line in lines {
-            println!("> {}", line);
-        }
+    let mut req = Request {
+        method:  req_line_fields[0],
+        uri:     req_line_fields[1],
+        version: req_line_fields[2],
+        address: stream.peer_addr().unwrap().ip()
+    };
+    if opts.debug {
+        println!("> {} {} {}", req.method, req.uri, req.version);
     }
 
-    let mut res_status_code = 200;
-    let mut res_reason_phrase = "Ok";
-    let mut res_body = vec![0; 10];
-    let mut res_size = 0;
+    // Parse the headers
+        for line in lines {
+            if opts.debug {
+                println!("> {}", line);
+            }
+            if line == "" {
+                break; // End of headers
+            }
+        }
+
+    let mut res = Response {
+        status_code: 200,
+        reason_phrase: "Ok",
+        body: vec![],
+        size: 0
+    };
 
     // Prevent path traversory attack
     let mut components: Vec<&str> = vec![];
-    for component in Path::new(req_uri).components() {
+    for component in Path::new(req.uri).components() {
         match component {
             Component::ParentDir => { components.pop(); },
             Component::Normal(s) => { components.push(s.to_str().unwrap()); },
@@ -82,30 +119,30 @@ fn handle_client(mut stream: TcpStream, debug: bool) {
     for component in components {
         path.push(component); 
     }
-    if debug {
+    if opts.debug {
         println!("DEBUG: path => {:?}", path);
     }
 
-    if req_method == "GET" {
+    if req.method == "GET" {
         match File::open(path) {
             Err(_) => {
-                if debug {
+                if opts.debug {
                     println!("ERROR: could not open file");
                 }
-                res_status_code = 404;
-                res_reason_phrase = "Not Found";
+                res.status_code = 404;
+                res.reason_phrase = "Not Found";
             },
             Ok(mut file) => {
-                match file.read_to_end(&mut res_body) {
+                match file.read_to_end(&mut res.body) {
                     Err(_) => {
-                        if debug {
+                        if opts.debug {
                             println!("ERROR: could not read file");
                         }
-                        res_status_code = 404;
-                        res_reason_phrase = "Not Found";
+                        res.status_code = 404;
+                        res.reason_phrase = "Not Found";
                     }
                     Ok(n) => {
-                        res_size = n; // FIXME
+                        res.size = n; // FIXME
                     }
                 }
             }
@@ -113,14 +150,14 @@ fn handle_client(mut stream: TcpStream, debug: bool) {
     }
 
     let mut lines = vec![];
-    lines.push(format!("HTTP/1.0 {} {}\n", res_status_code, res_reason_phrase));
+    lines.push(format!("HTTP/1.0 {} {}\n", res.status_code, res.reason_phrase));
     lines.push(format!("Server: SimpletonHTTP/0.0.0\n"));
     //lines.push(format!("Content-Type: text/html; charset=utf-8\n"));
-    //lines.push(format!("Content-Length: {}\n", res_size));
+    //lines.push(format!("Content-Length: {}\n", res.size));
     for line in lines {
         let _ = stream.write(line.as_bytes());
     }
     let _ = stream.write(b"\n");
-    let _ = stream.write(&res_body);
-    println!("{} - - \"{} {} {}\" {}", req_address, req_method, req_uri, req_version, res_status_code);
+    let _ = stream.write(&res.body);
+    println!("{} - - \"{} {} {}\" {}", req.address, req.method, req.uri, req.version, res.status_code);
 }
