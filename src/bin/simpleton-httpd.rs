@@ -116,7 +116,7 @@ fn handle_client(mut stream: TcpStream, debug: bool) {
     lines.push(format!("HTTP/1.0 {} {}\n", res_status_code, res_reason_phrase));
     lines.push(format!("Server: SimpletonHTTP/0.0.0\n"));
     //lines.push(format!("Content-Type: text/html; charset=utf-8\n"));
-    lines.push(format!("Content-Length: {}\n", res_size));
+    //lines.push(format!("Content-Length: {}\n", res_size));
     for line in lines {
         let _ = stream.write(line.as_bytes());
     }
