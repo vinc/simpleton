@@ -42,6 +42,9 @@ fn handle_client(mut stream: TcpStream, debug: bool) {
     }
     
     let req_address = stream.peer_addr().unwrap().ip();
+
+    //let mut buf: Vec<u8> = vec![];
+    //let _ = stream.read_to_end(&mut buf);
     let mut buf = [0; 256];
     let _ = stream.read(&mut buf);
 

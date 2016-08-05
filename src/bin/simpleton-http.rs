@@ -18,7 +18,7 @@ fn main() {
     let _ = stream.write(b"Accept: */*\n");
     let _ = stream.write(b"\n");
 
-    let mut buf = [0; 256];
-    let _ = stream.read(&mut buf);
+    let mut buf: Vec<u8> = vec![];
+    let _ = stream.read_to_end(&mut buf);
     println!("{}", str::from_utf8(&buf).unwrap());
 }
