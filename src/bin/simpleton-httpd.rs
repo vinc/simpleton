@@ -93,9 +93,21 @@ fn handle_client(mut stream: TcpStream, opts: Options) {
         size: 0
     };
 
-    let path = parse_path(req, opts);
+    let indexes = vec!["index.htm", "index.html"];
+    let p = String::from(opts.root_path) + &get_uri(req);
+    let mut path = PathBuf::from(p);
+    if path.is_dir() {
+        for index in indexes {
+            if path.join(index).is_file() {
+                path.push(index);
+                break;
+            }
+        }
+    } else if !path.is_file() {
+        // TODO: 404
+    }
     if opts.debug {
-        println!("DEBUG: path => {:?}", path);
+        println!("DEBUG: path = {:?}", path);
     }
 
     if req.method == "GET" {
@@ -151,9 +163,10 @@ fn print_log(req: Request, res: Response) {
     );
 }
 
-fn parse_path(req: Request, opts: Options) -> String {
-    // Prevent path traversory attack
-    let mut components: Vec<&str> = vec![];
+fn get_uri(req: Request) -> String {
+    let mut components = vec![];
+
+    // Rebuild URL to prevent path traversory attack
     for component in Path::new(req.uri).components() {
         match component {
             Component::ParentDir => { components.pop(); },
@@ -161,11 +174,11 @@ fn parse_path(req: Request, opts: Options) -> String {
             _                    => { }
         }
     }
-    let mut path = PathBuf::from(opts.root_path);
+
+    let mut path = PathBuf::from("/");
     for component in components {
         path.push(component);
     }
-
     path.to_str().unwrap().to_string()
 }
 
