@@ -1,62 +1,23 @@
 extern crate time;
+extern crate simpleton;
 
 use std::collections::HashMap;
-use std::env;
 use std::error::Error;
 use std::fs::File;
 use std::io::prelude::*;
-use std::net::{TcpListener, TcpStream, IpAddr};
+use std::net::{TcpListener, TcpStream};
 use std::path::{Path, PathBuf, Component};
 use std::process::exit;
 use std::str;
 use std::thread;
 
-#[derive(Copy, Clone)]
-struct ServerOptions<'a> {
-    root_path: &'a str,
-    name: &'a str,
-    address: &'a str,
-    port: u16,
-    debug: bool
-}
-
-#[derive(Copy, Clone)]
-struct Request<'a> {
-    address: IpAddr,
-    method: &'a str,
-    uri: &'a str,
-    version: &'a str
-}
-
-#[derive(Clone)]
-struct Response<'a> {
-    status_code: u16,
-    reason_phrase: &'a str,
-    date: &'a str,
-    body: Vec<u8>,
-    size: usize
-}
+// TODO: put everything inside server.rs
+use simpleton::http::server::options::Options;
+use simpleton::http::server::request::Request;
+use simpleton::http::server::response::Response;
 
 fn main() {
-    let mut opts = ServerOptions {
-        root_path: ".",
-        name: "Simpleton HTTP Server",
-        address: "127.0.0.1",
-        port: 3000,
-        debug: false
-    };
-
-    let args: Vec<_> = env::args().filter(|arg| {
-        if arg == "--debug" {
-            opts.debug = true;
-        }
-
-        !arg.starts_with("--")
-    }).collect();
-
-    if args.len() > 1 {
-        //opts.root_path = args[1]; // FIXME
-    }
+    let opts = Options::from_args(std::env::args().collect());
 
     println!("{}", opts.name);
 
@@ -80,7 +41,7 @@ fn main() {
     drop(listener);
 }
 
-fn handle_client(mut stream: TcpStream, opts: ServerOptions) {
+fn handle_client(mut stream: TcpStream, opts: Options) {
     if opts.debug {
         println!("");
     }
@@ -135,7 +96,7 @@ fn handle_client(mut stream: TcpStream, opts: ServerOptions) {
         size: 0
     };
 
-    let path = get_path(req, opts);
+    let path = parse_path(req, opts);
     if opts.debug {
         println!("DEBUG: path => {:?}", path);
     }
@@ -193,7 +154,7 @@ fn print_log(req: Request, res: Response) {
     );
 }
 
-fn get_path(req: Request, opts: ServerOptions) -> String {
+fn parse_path(req: Request, opts: Options) -> String {
     // Prevent path traversory attack
     let mut components: Vec<&str> = vec![];
     for component in Path::new(req.uri).components() {
