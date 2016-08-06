@@ -11,6 +11,7 @@ use std::env;
 
 #[derive(Copy, Clone)]
 struct ServerOptions<'a> {
+    root_path: &'a str,
     name: &'a str,
     address: &'a str,
     port: u16,
@@ -36,6 +37,7 @@ struct Response<'a> {
 
 fn main() {
     let mut opts = ServerOptions {
+        root_path: "./",
         name: "Simpleton HTTP Server",
         address: "127.0.0.1",
         port: 3000,
@@ -122,19 +124,7 @@ fn handle_client(mut stream: TcpStream, opts: ServerOptions) {
         size: 0
     };
 
-    // Prevent path traversory attack
-    let mut components: Vec<&str> = vec![];
-    for component in Path::new(req.uri).components() {
-        match component {
-            Component::ParentDir => { components.pop(); },
-            Component::Normal(s) => { components.push(s.to_str().unwrap()); },
-            _                    => { }
-        }
-    }
-    let mut path = PathBuf::from("./");
-    for component in components {
-        path.push(component); 
-    }
+    let path = get_path(req, opts);
     if opts.debug {
         println!("DEBUG: path => {:?}", path);
     }
@@ -190,4 +180,22 @@ fn print_log(req: Request, res: Response) {
         req.version,
         res.status_code
     );
+}
+
+fn get_path(req: Request, opts: ServerOptions) -> String {
+    // Prevent path traversory attack
+    let mut components: Vec<&str> = vec![];
+    for component in Path::new(req.uri).components() {
+        match component {
+            Component::ParentDir => { components.pop(); },
+            Component::Normal(s) => { components.push(s.to_str().unwrap()); },
+            _                    => { }
+        }
+    }
+    let mut path = PathBuf::from(opts.root_path);
+    for component in components {
+        path.push(component);
+    }
+
+    path.to_str().unwrap().to_string()
 }
