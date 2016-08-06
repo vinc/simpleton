@@ -46,10 +46,16 @@ fn main() {
         debug: false
     };
 
-    for arg in env::args() {
+    let args: Vec<_> = env::args().filter(|arg| {
         if arg == "--debug" {
             opts.debug = true;
         }
+
+        !arg.starts_with("--")
+    }).collect();
+
+    if args.len() > 1 {
+        //opts.root_path = args[1]; // FIXME
     }
 
     println!("{}", opts.name);
