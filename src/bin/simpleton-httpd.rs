@@ -1,13 +1,15 @@
 extern crate time;
 
 use std::collections::HashMap;
+use std::env;
+use std::error::Error;
 use std::fs::File;
 use std::io::prelude::*;
 use std::net::{TcpListener, TcpStream, IpAddr};
 use std::path::{Path, PathBuf, Component};
+use std::process::exit;
 use std::str;
 use std::thread;
-use std::env;
 
 #[derive(Copy, Clone)]
 struct ServerOptions<'a> {
@@ -50,18 +52,21 @@ fn main() {
         }
     }
 
-    let listener = TcpListener::bind((opts.address, opts.port)).unwrap();
-    println!("{} is listening on {}:{}\n", opts.name, opts.address, opts.port);
+    println!("{}", opts.name);
+
+    let listener = match TcpListener::bind((opts.address, opts.port)) {
+        Err(e)       => exit_on_error(e),
+        Ok(listener) => listener
+    };
+    println!("Listening on {}:{}", opts.address, opts.port);
 
     for stream in listener.incoming() {
         match stream {
+            Err(e)     => exit_on_error(e),
             Ok(stream) => {
                 thread::spawn(move|| {
                     handle_client(stream, opts)
                 });
-            }
-            Err(e) => {
-                // HTTP Connexion failed
             }
         }
     }
@@ -85,7 +90,7 @@ fn handle_client(mut stream: TcpStream, opts: ServerOptions) {
     let req_line = lines.next().unwrap();
     let req_line_fields: Vec<&str> = req_line.split_whitespace().collect();
     // TODO: Check req_lien_fields
-    let mut req = Request {
+    let req = Request {
         method:  req_line_fields[0],
         uri:     req_line_fields[1],
         version: req_line_fields[2],
@@ -198,4 +203,10 @@ fn get_path(req: Request, opts: ServerOptions) -> String {
     }
 
     path.to_str().unwrap().to_string()
+}
+
+fn exit_on_error(e: std::io::Error) -> ! {
+    let mut stderr = std::io::stderr();
+    writeln!(&mut stderr, "Error: {}", e.description()).unwrap();
+    exit(1);
 }
