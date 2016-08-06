@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::borrow::ToOwned;
 use std::fs::File;
 use std::io::prelude::*;
@@ -79,6 +80,7 @@ fn handle_client(mut stream: TcpStream, opts: ServerOptions) {
     // Parse the request line
     let req_line = lines.next().unwrap();
     let req_line_fields: Vec<&str> = req_line.split_whitespace().collect();
+    // TODO: Check req_lien_fields
     let mut req = Request {
         method:  req_line_fields[0],
         uri:     req_line_fields[1],
@@ -90,14 +92,23 @@ fn handle_client(mut stream: TcpStream, opts: ServerOptions) {
     }
 
     // Parse the headers
-        for line in lines {
-            if opts.debug {
-                println!("> {}", line);
-            }
-            if line == "" {
-                break; // End of headers
+    let mut req_headers = HashMap::new();
+    for line in lines {
+        if opts.debug {
+            println!("> {}", line);
+        }
+        let mut fields = line.splitn(2, ":");
+        if let Some(field_name) = fields.next() {
+            if let Some(field_value) = fields.next() {
+                let name = field_name.trim();
+                let value = field_value.trim();
+                req_headers.insert(name, value);
             }
         }
+        if line == "" {
+            break; // End of headers
+        }
+    }
 
     let mut res = Response {
         status_code: 200,
