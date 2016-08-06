@@ -6,7 +6,7 @@ use std::error::Error;
 use std::fs::File;
 use std::io::prelude::*;
 use std::net::{TcpListener, TcpStream};
-use std::path::{Path, PathBuf, Component};
+use std::path::PathBuf;
 use std::process::exit;
 use std::str;
 use std::thread;
@@ -94,7 +94,7 @@ fn handle_client(mut stream: TcpStream, opts: Options) {
     };
 
     let indexes = vec!["index.htm", "index.html"];
-    let p = String::from(opts.root_path) + &get_uri(req);
+    let p = String::from(opts.root_path) + &req.get_uri();
     let mut path = PathBuf::from(p);
     if path.is_dir() {
         for index in indexes {
@@ -161,25 +161,6 @@ fn print_log(req: Request, res: Response) {
         req.version,
         res.status_code
     );
-}
-
-fn get_uri(req: Request) -> String {
-    let mut components = vec![];
-
-    // Rebuild URL to prevent path traversory attack
-    for component in Path::new(req.uri).components() {
-        match component {
-            Component::ParentDir => { components.pop(); },
-            Component::Normal(s) => { components.push(s.to_str().unwrap()); },
-            _                    => { }
-        }
-    }
-
-    let mut path = PathBuf::from("/");
-    for component in components {
-        path.push(component);
-    }
-    path.to_str().unwrap().to_string()
 }
 
 fn exit_on_error(e: std::io::Error) -> ! {
