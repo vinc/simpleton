@@ -87,7 +87,7 @@ fn handle_client(mut stream: TcpStream, opts: Options) {
     let date = time::strftime("%a, %d %b %y %T %Z", &time).unwrap();
     let mut res = Response {
         status_code: 200,
-        reason_phrase: "Ok",
+        status_message: "Ok",
         date: date.as_str(),
         body: vec![],
         size: 0
@@ -117,7 +117,7 @@ fn handle_client(mut stream: TcpStream, opts: Options) {
                     println!("ERROR: could not open file");
                 }
                 res.status_code = 404;
-                res.reason_phrase = "Not Found";
+                res.status_message = "Not Found";
             },
             Ok(mut file) => {
                 match file.read_to_end(&mut res.body) {
@@ -126,7 +126,7 @@ fn handle_client(mut stream: TcpStream, opts: Options) {
                             println!("ERROR: could not read file");
                         }
                         res.status_code = 404;
-                        res.reason_phrase = "Not Found";
+                        res.status_message = "Not Found";
                     }
                     Ok(n) => {
                         res.size = n; // FIXME
@@ -137,7 +137,7 @@ fn handle_client(mut stream: TcpStream, opts: Options) {
     }
 
     let mut lines = vec![];
-    lines.push(format!("HTTP/1.0 {} {}\n", res.status_code, res.reason_phrase));
+    lines.push(format!("HTTP/1.1 {} {}\n", res.status_code, res.status_message));
     lines.push(format!("Server: SimpletonHTTP/0.0.0\n"));
     lines.push(format!("Date: {}\n", res.date));
     //lines.push(format!("Content-Type: text/html; charset=utf-8\n"));
