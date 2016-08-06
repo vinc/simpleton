@@ -39,7 +39,7 @@ struct Response<'a> {
 
 fn main() {
     let mut opts = ServerOptions {
-        root_path: "./",
+        root_path: ".",
         name: "Simpleton HTTP Server",
         address: "127.0.0.1",
         port: 3000,
