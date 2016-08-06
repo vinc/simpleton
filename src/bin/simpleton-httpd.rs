@@ -11,10 +11,7 @@ use std::process::exit;
 use std::str;
 use std::thread;
 
-// TODO: put everything inside server.rs
-use simpleton::http::server::options::Options;
-use simpleton::http::server::request::Request;
-use simpleton::http::server::response::Response;
+use simpleton::http::server::{Options, Request, Response};
 
 fn main() {
     let opts = Options::from_args(std::env::args().collect());
