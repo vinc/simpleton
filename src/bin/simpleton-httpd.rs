@@ -1,5 +1,6 @@
+extern crate time;
+
 use std::collections::HashMap;
-use std::borrow::ToOwned;
 use std::fs::File;
 use std::io::prelude::*;
 use std::net::{TcpListener, TcpStream, IpAddr};
@@ -28,6 +29,7 @@ struct Request<'a> {
 struct Response<'a> {
     status_code: u16,
     reason_phrase: &'a str,
+    date: &'a str,
     body: Vec<u8>,
     size: usize
 }
@@ -110,9 +112,12 @@ fn handle_client(mut stream: TcpStream, opts: ServerOptions) {
         }
     }
 
+    let time = time::now();
+    let date = time::strftime("%a, %d %b %y %T %Z", &time).unwrap();
     let mut res = Response {
         status_code: 200,
         reason_phrase: "Ok",
+        date: date.as_str(),
         body: vec![],
         size: 0
     };
@@ -163,6 +168,7 @@ fn handle_client(mut stream: TcpStream, opts: ServerOptions) {
     let mut lines = vec![];
     lines.push(format!("HTTP/1.0 {} {}\n", res.status_code, res.reason_phrase));
     lines.push(format!("Server: SimpletonHTTP/0.0.0\n"));
+    lines.push(format!("Date: {}\n", res.date));
     //lines.push(format!("Content-Type: text/html; charset=utf-8\n"));
     //lines.push(format!("Content-Length: {}\n", res.size));
     for line in lines {
@@ -170,5 +176,18 @@ fn handle_client(mut stream: TcpStream, opts: ServerOptions) {
     }
     let _ = stream.write(b"\n");
     let _ = stream.write(&res.body);
-    println!("{} - - \"{} {} {}\" {}", req.address, req.method, req.uri, req.version, res.status_code);
+
+    print_log(req, res);
+}
+
+fn print_log(req: Request, res: Response) {
+    println!(
+        "{} - - [{}] \"{} {} {}\" {}",
+        req.address,
+        res.date,
+        req.method,
+        req.uri,
+        req.version,
+        res.status_code
+    );
 }
