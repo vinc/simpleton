@@ -13,7 +13,7 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn configured_from_args(args: Vec<String>) -> Server {
+    pub fn new() -> Server {
         let mut server = Server {
             root_path: ".".into(),
             name: "Simpleton HTTP Server".into(),
@@ -24,26 +24,27 @@ impl Server {
             directory_indexes: vec!["index.htm".into(), "index.html".into()],
             content_types: HashMap::new()
         };
-
         server.content_types.insert("html".into(), "text/html".into());
         server.content_types.insert("txt".into(),  "text/plain".into());
 
+        server
+    }
+
+    pub fn configure_from_args(&mut self, args: Vec<String>) {
         let args: Vec<_> = args.iter().filter(|&arg| {
             if arg == "--debug" {
-                server.debug = true;
+                self.debug = true;
             }
 
             if arg == "--allow-trace" {
-                server.allow_trace = true;
+                self.allow_trace = true;
             }
 
             !arg.starts_with("--")
         }).collect();
 
         if args.len() > 1 {
-            //server.root_path = args[1]; // FIXME
+            //self.root_path = args[1]; // FIXME
         }
-
-        server
     }
 }

@@ -15,7 +15,9 @@ use std::thread;
 use simpleton::http::{Server, Request, Response};
 
 fn main() {
-    let server = Server::configured_from_args(std::env::args().collect());
+    let mut server = Server::new();
+
+    server.configure_from_args(std::env::args().collect());
 
     println!("{}", server.name);
 
