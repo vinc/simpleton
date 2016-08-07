@@ -1,11 +1,12 @@
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Options<'a> {
     pub root_path: &'a str,
     pub name: &'a str,
     pub address: &'a str,
     pub port: u16,
     pub debug: bool,
-    pub allow_trace: bool
+    pub allow_trace: bool,
+    pub directory_indexes: Vec<String>
 }
 
 impl<'a> Options<'a> {
@@ -16,7 +17,8 @@ impl<'a> Options<'a> {
             address: "127.0.0.1",
             port: 3000,
             debug: false,
-            allow_trace: false
+            allow_trace: false,
+            directory_indexes: vec!["index.htm".into(), "index.html".into()]
         };
 
         let args: Vec<_> = args.iter().filter(|&arg| {

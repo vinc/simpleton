@@ -29,6 +29,7 @@ fn main() {
         match stream {
             Err(e)     => exit_on_error(e),
             Ok(stream) => {
+                let opts = opts.clone();
                 thread::spawn(move|| {
                     handle_client(stream, opts)
                 });
@@ -86,11 +87,10 @@ fn handle_client(stream: TcpStream, opts: Options) {
         return;
     }
 
-    let indexes = vec!["index.htm", "index.html"];
     let p = String::from(opts.root_path) + &req.get_uri();
     let mut path = PathBuf::from(p);
     if path.is_dir() {
-        for index in indexes {
+        for index in &opts.directory_indexes {
             if path.join(index).is_file() {
                 path.push(index);
                 break;
