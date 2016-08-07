@@ -3,8 +3,9 @@ extern crate simpleton;
 
 use std::error::Error;
 use std::fs::File;
-use std::io::prelude::*;
 use std::io::BufReader;
+use std::io::prelude::*;
+use std::net::IpAddr;
 use std::net::{TcpListener, TcpStream};
 use std::path::PathBuf;
 use std::process::exit;
@@ -39,6 +40,8 @@ fn main() {
 }
 
 fn handle_client(stream: TcpStream, opts: Options) {
+    let address = stream.peer_addr().unwrap().ip();
+
     if opts.debug {
         println!("");
     }
@@ -99,7 +102,7 @@ fn handle_client(stream: TcpStream, opts: Options) {
     res.set_header("content-type", "text/html; charset=utf-8");
     res.send(&stream);
 
-    print_log(req, res, &stream);
+    print_log(address, req, res);
 }
 
 fn read_file(path: &str, buf: &mut Vec<u8>) -> Result<(), String> {
@@ -114,9 +117,7 @@ fn read_file(path: &str, buf: &mut Vec<u8>) -> Result<(), String> {
     Ok(())
 }
 
-fn print_log(req: Request, res: Response, stream: &TcpStream) {
-    let address = stream.peer_addr().unwrap().ip();
-
+fn print_log(address: IpAddr, req: Request, res: Response) {
     println!(
         "{} - - [{}] \"{} {} {}\" {}",
         address,

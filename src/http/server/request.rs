@@ -13,7 +13,10 @@ impl<'a> Request<'a> {
         let mut lines = message.lines();
 
         // Parse the request line
-        let req_line = lines.next().unwrap();
+        let req_line = match lines.next() {
+            None       => return Err("Could not read request line".into()),
+            Some(line) => line
+        };
         let req_line_fields: Vec<&str> = req_line.split_whitespace().collect();
         if req_line_fields.len() != 3 {
             return Err("Could not parse request line".into());
