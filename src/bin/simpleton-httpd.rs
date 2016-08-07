@@ -57,18 +57,27 @@ fn handle_client(stream: TcpStream, opts: Options) {
             }
         }
     }
-    let buf = lines.join("\n");
+    let request_message = lines.join("\n");
 
-    let req = match Request::from_str(&buf) {
+    let req = match Request::from_str(&request_message) {
         Err(_)  => return,
         Ok(req) => req
     };
 
     let mut res = Response::new();
 
-    if req.method != "GET" && req.method != "HEAD" {
+    let methods = vec!["GET", "HEAD", "TRACE"];
+    if let None = methods.iter().find(|&&method| method == req.method) {
         res.status_code = 501;
         res.status_message = "Not Implemented".into();
+        res.send(&stream);
+        print_log(address, req, res);
+        return;
+    }
+
+    if req.method == "TRACE" {
+        res.set_header("content-type", "message/http");
+        res.body = request_message.as_bytes().to_vec();
         res.send(&stream);
         print_log(address, req, res);
         return;
