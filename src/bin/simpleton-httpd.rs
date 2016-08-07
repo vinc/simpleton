@@ -120,9 +120,7 @@ fn handle_client(mut stream: TcpStream, opts: Options) {
                         res.status_code = 404;
                         res.status_message = "Not Found";
                     }
-                    Ok(n) => {
-                        res.size = n; // FIXME
-                    }
+                    Ok(_) => { }
                 }
             }
         }

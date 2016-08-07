@@ -1,18 +1,26 @@
 extern crate time;
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::io::prelude::*;
 use std::net::TcpStream;
+
+
+/*
+ * HTTP Response
+ *
+ * NOTE: headers are stored in a BTreeMap. It would be faster to use a HashMap
+ * instead but the order in which they are displayed would become
+ * non-deterministic.
+ */
 
 #[derive(Clone)]
 pub struct Response<'a> {
     pub status_code: u16,
     pub status_message: &'a str,
     pub date: String,
-    pub head: Vec<u8>,
     pub body: Vec<u8>,
-    pub size: usize,
-    headers: HashMap<String, String>
+    head: Vec<u8>,
+    headers: BTreeMap<String, String>
 }
 
 impl<'a> Response<'a> {
@@ -26,8 +34,7 @@ impl<'a> Response<'a> {
             date: date,
             head: Vec::new(),
             body: Vec::new(),
-            size: 0,
-            headers: HashMap::new()
+            headers: BTreeMap::new()
         }
     }
 
