@@ -34,7 +34,7 @@ fn main() {
 
     if verbose {
         for line in req.to_string().lines() {
-            println!("< {}", line);
+            println!("> {}", line);
         }
     }
 
@@ -46,7 +46,7 @@ fn main() {
             Ok(line) => {
                 if is_header {
                     if verbose {
-                        println!("> {}", line);
+                        println!("< {}", line);
                     }
                 } else {
                     println!("{}", line);
