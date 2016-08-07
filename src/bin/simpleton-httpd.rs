@@ -42,10 +42,6 @@ fn main() {
 fn handle_client(stream: TcpStream, opts: Options) {
     let address = stream.peer_addr().unwrap().ip();
 
-    if opts.debug {
-        println!("");
-    }
-    
     // Read the request message
     let mut lines = vec![];
     let reader = BufReader::new(&stream);
@@ -70,6 +66,14 @@ fn handle_client(stream: TcpStream, opts: Options) {
 
     let mut res = Response::new();
 
+    if req.method != "GET" && req.method != "HEAD" {
+        res.status_code = 501;
+        res.status_message = "Not Implemented";
+        res.send(&stream);
+        print_log(address, req, res);
+        return;
+    }
+
     let indexes = vec!["index.htm", "index.html"];
     let p = String::from(opts.root_path) + &req.get_uri();
     let mut path = PathBuf::from(p);
@@ -80,27 +84,23 @@ fn handle_client(stream: TcpStream, opts: Options) {
                 break;
             }
         }
-    } else if path.is_file() {
-        // TODO: Get content type from extension
-    } else {
-        // TODO: 404
-    }
-    if opts.debug {
-        println!("DEBUG: path = {:?}", path);
-    }
+    } // NOTE: we could check 404 here with `else if !path.is_file()`
 
-    if req.method == "GET" {
-        if let Err(e) = read_file(path.to_str().unwrap(), &mut res.body) {
-            if opts.debug {
-                println!("ERROR: {}", e);
-            }
-            res.status_code = 404;
-            res.status_message = "Not Found";
-        }
+    if let Err(_) = read_file(path.to_str().unwrap(), &mut res.body) {
+        res.status_code = 404;
+        res.status_message = "Not Found";
+        res.send(&stream);
+        print_log(address, req, res);
+        return;
     }
 
     res.set_header("content-type", "text/html; charset=utf-8");
-    res.send(&stream);
+
+    if req.method == "HEAD" {
+        res.send_head(&stream);
+    } else {
+        res.send(&stream);
+    }
 
     print_log(address, req, res);
 }

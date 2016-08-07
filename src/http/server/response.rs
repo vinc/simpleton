@@ -19,6 +19,7 @@ pub struct Response<'a> {
     pub status_message: &'a str,
     pub date: String,
     pub body: Vec<u8>,
+    head_sent: bool,
     head: Vec<u8>,
     headers: BTreeMap<String, String>
 }
@@ -32,6 +33,7 @@ impl<'a> Response<'a> {
             status_code: 200,
             status_message: "Ok",
             date: date,
+            head_sent: false,
             head: Vec::new(),
             body: Vec::new(),
             headers: BTreeMap::new()
@@ -46,7 +48,7 @@ impl<'a> Response<'a> {
         self.headers.insert(name.into(), value.into());
     }
 
-    pub fn send(&mut self, mut stream: &TcpStream) {
+    pub fn send_head(&mut self, mut stream: &TcpStream) {
         // Status line
         let version = "HTTP/1.1";
         let code = self.status_code;
@@ -55,10 +57,12 @@ impl<'a> Response<'a> {
         self.head.extend(line.as_bytes().iter().cloned());
 
         // Headers
-        let content_length = self.body.len().to_string();
+        if !self.headers.contains_key("content-length") {
+            let content_length = self.body.len().to_string();
+            self.set_header("content-length", &content_length);
+        }
         let date = self.date.clone();
         self.set_header("server", "SimpletonHTTP/0.0.0");
-        self.set_header("content-length", &content_length);
         self.set_header("date", &date);
         for (name, value) in &self.headers {
             let line = format!("{}: {}\n", name, value);
@@ -67,6 +71,14 @@ impl<'a> Response<'a> {
 
         let _ = stream.write(&self.head);
         let _ = stream.write(b"\n");
+
+        self.head_sent = true;
+    }
+
+    pub fn send(&mut self, mut stream: &TcpStream) {
+        if !self.head_sent {
+            self.send_head(&stream);
+        }
         let _ = stream.write(&self.body);
     }
 }
