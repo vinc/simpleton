@@ -83,15 +83,7 @@ fn handle_client(mut stream: TcpStream, opts: Options) {
         }
     }
 
-    let time = time::now();
-    let date = time::strftime("%a, %d %b %y %T %Z", &time).unwrap();
-    let mut res = Response {
-        status_code: 200,
-        status_message: "Ok",
-        date: date.as_str(),
-        body: vec![],
-        size: 0
-    };
+    let mut res = Response::new();
 
     let indexes = vec!["index.htm", "index.html"];
     let p = String::from(opts.root_path) + &req.get_uri();
@@ -136,17 +128,8 @@ fn handle_client(mut stream: TcpStream, opts: Options) {
         }
     }
 
-    let mut lines = vec![];
-    lines.push(format!("HTTP/1.1 {} {}\n", res.status_code, res.status_message));
-    lines.push(format!("Server: SimpletonHTTP/0.0.0\n"));
-    lines.push(format!("Date: {}\n", res.date));
-    //lines.push(format!("Content-Type: text/html; charset=utf-8\n"));
-    //lines.push(format!("Content-Length: {}\n", res.size));
-    for line in lines {
-        let _ = stream.write(line.as_bytes());
-    }
-    let _ = stream.write(b"\n");
-    let _ = stream.write(&res.body);
+    res.set_header("content-type", "text/html; charset=utf-8");
+    res.send(&stream);
 
     print_log(req, res);
 }
