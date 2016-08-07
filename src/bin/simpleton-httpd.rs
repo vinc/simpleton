@@ -58,7 +58,6 @@ fn handle_client(mut stream: TcpStream, opts: Options) {
         method:  req_line_fields[0],
         uri:     req_line_fields[1],
         version: req_line_fields[2],
-        address: stream.peer_addr().unwrap().ip()
     };
     if opts.debug {
         println!("> {} {} {}", req.method, req.uri, req.version);
@@ -129,13 +128,15 @@ fn handle_client(mut stream: TcpStream, opts: Options) {
     res.set_header("content-type", "text/html; charset=utf-8");
     res.send(&stream);
 
-    print_log(req, res);
+    print_log(req, res, &stream);
 }
 
-fn print_log(req: Request, res: Response) {
+fn print_log(req: Request, res: Response, stream: &TcpStream) {
+    let address = stream.peer_addr().unwrap().ip();
+
     println!(
         "{} - - [{}] \"{} {} {}\" {}",
-        req.address,
+        address,
         res.date,
         req.method,
         req.uri,

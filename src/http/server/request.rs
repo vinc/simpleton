@@ -1,9 +1,7 @@
-use std::net::IpAddr;
 use std::path::{Path, PathBuf, Component};
 
 #[derive(Copy, Clone)]
 pub struct Request<'a> {
-    pub address: IpAddr,
     pub method: &'a str,
     pub uri: &'a str,
     pub version: &'a str
