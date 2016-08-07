@@ -64,6 +64,7 @@ impl Response {
         let date = self.date.clone();
         self.set_header("server", "SimpletonHTTP/0.0.0");
         self.set_header("date", &date);
+        self.set_header("connection", "close");
         for (name, value) in &self.headers {
             let line = format!("{}: {}\n", name, value);
             self.head.extend(line.as_bytes().iter().cloned());
