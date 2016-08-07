@@ -19,7 +19,8 @@ fn main() {
 
     println!("{}", options.name);
 
-    let listener = match TcpListener::bind((options.address, options.port)) {
+    let binding = (options.address.as_str(), options.port);
+    let listener = match TcpListener::bind(binding) {
         Err(e)       => exit_on_error(e),
         Ok(listener) => listener
     };

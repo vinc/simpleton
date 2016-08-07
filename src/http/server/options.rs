@@ -1,20 +1,20 @@
 #[derive(Clone)]
-pub struct Options<'a> {
-    pub root_path: &'a str,
-    pub name: &'a str,
-    pub address: &'a str,
+pub struct Options {
+    pub root_path: String,
+    pub name: String,
+    pub address: String,
     pub port: u16,
     pub debug: bool,
     pub allow_trace: bool,
     pub directory_indexes: Vec<String>
 }
 
-impl<'a> Options<'a> {
-    pub fn from_args(args: Vec<String>) -> Options<'a> {
+impl Options {
+    pub fn from_args(args: Vec<String>) -> Options {
         let mut options = Options {
-            root_path: ".",
-            name: "Simpleton HTTP Server",
-            address: "127.0.0.1",
+            root_path: ".".into(),
+            name: "Simpleton HTTP Server".into(),
+            address: "127.0.0.1".into(),
             port: 3000,
             debug: false,
             allow_trace: false,
