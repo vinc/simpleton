@@ -66,7 +66,10 @@ fn handle_client(stream: TcpStream, opts: Options) {
 
     let mut res = Response::new();
 
-    let methods = vec!["GET", "HEAD", "TRACE"];
+    let mut methods = vec!["GET", "HEAD"];
+    if opts.allow_trace {
+        methods.push("TRACE");
+    }
     if let None = methods.iter().find(|&&method| method == req.method) {
         res.status_code = 501;
         res.status_message = "Not Implemented".into();

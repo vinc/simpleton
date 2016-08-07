@@ -4,7 +4,8 @@ pub struct Options<'a> {
     pub name: &'a str,
     pub address: &'a str,
     pub port: u16,
-    pub debug: bool
+    pub debug: bool,
+    pub allow_trace: bool
 }
 
 impl<'a> Options<'a> {
@@ -14,12 +15,17 @@ impl<'a> Options<'a> {
             name: "Simpleton HTTP Server",
             address: "127.0.0.1",
             port: 3000,
-            debug: false
+            debug: false,
+            allow_trace: false
         };
 
         let args: Vec<_> = args.iter().filter(|&arg| {
             if arg == "--debug" {
                 opts.debug = true;
+            }
+
+            if arg == "--allow-trace" {
+                opts.allow_trace = true;
             }
 
             !arg.starts_with("--")
