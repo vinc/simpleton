@@ -41,11 +41,11 @@ impl Response {
     }
 
     pub fn get_header(&self, name: &str) -> Option<&String> {
-        self.headers.get(name)
+        self.headers.get(&name.to_lowercase())
     }
 
     pub fn set_header(&mut self, name: &str, value: &str) {
-        self.headers.insert(name.into(), value.into());
+        self.headers.insert(name.to_lowercase(), value.into());
     }
 
     pub fn send_head(&mut self, mut stream: &TcpStream) {
