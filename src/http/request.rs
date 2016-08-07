@@ -1,15 +1,16 @@
-use std::collections::BTreeMap;
 use std::io::prelude::*;
 use std::net::TcpStream;
 use std::path::{Path, PathBuf, Component};
+
+use http::headers::Headers;
 
 #[derive(Clone)]
 pub struct Request {
     pub method: String,
     pub uri: String,
     pub version: String,
+    pub headers: Headers,
     head: Vec<u8>,
-    headers: BTreeMap<String, String>
 }
 
 impl Request {
@@ -21,11 +22,11 @@ impl Request {
             uri:     uri.into(),
             version: version.into(),
             head: Vec::new(),
-            headers: BTreeMap::new()
+            headers: Headers::new()
         };
-        req.set_header("host".into(), host.into());
-        req.set_header("user-agent".into(), user_agent.into());
-        req.set_header("accept".into(), "*/*".into());
+        req.headers.set("host".into(), host.into());
+        req.headers.set("user-agent".into(), user_agent.into());
+        req.headers.set("accept".into(), "*/*".into());
 
         req
     }
@@ -47,7 +48,7 @@ impl Request {
             uri:     req_line_fields[1].into(),
             version: req_line_fields[2].into(),
             head: Vec::new(),
-            headers: BTreeMap::new()
+            headers: Headers::new()
         };
 
         // Parse the headers
@@ -57,7 +58,7 @@ impl Request {
                 if let Some(field_value) = fields.next() {
                     let name = field_name.trim();
                     let value = field_value.trim();
-                    req.set_header(name, value);
+                    req.headers.set(name, value);
                 }
             }
             if line == "" {
@@ -66,11 +67,6 @@ impl Request {
         }
         
         Ok(req)
-    }
-
-    // TODO: this code is duplicated in `response.rs`
-    pub fn set_header(&mut self, name: &str, value: &str) {
-        self.headers.insert(name.to_lowercase(), value.into());
     }
 
     pub fn get_uri(&self) -> String {

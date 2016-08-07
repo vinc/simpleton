@@ -94,7 +94,7 @@ fn handle_client(stream: TcpStream, server: Server) {
         // "message/http".
         //
         // (RFC 2616 9.8)
-        res.set_header("content-type", "message/http");
+        res.headers.set("content-type", "message/http");
         res.body = request_message.as_bytes().to_vec();
         res.send(&stream);
         print_log(address, req, res);
@@ -119,7 +119,7 @@ fn handle_client(stream: TcpStream, server: Server) {
     if let Some(extension) = path.extension() {
         let extension = extension.to_str().unwrap();
         if let Some(content_type) = server.content_types.get(extension) {
-             res.set_header("content-type", content_type);
+             res.headers.set("content-type", content_type);
         }
     }
 

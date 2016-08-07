@@ -1,17 +1,9 @@
 extern crate time;
 
-use std::collections::BTreeMap;
 use std::io::prelude::*;
 use std::net::TcpStream;
 
-
-/*
- * HTTP Response
- *
- * NOTE: headers are stored in a BTreeMap. It would be faster to use a HashMap
- * instead but the order in which they are displayed would become
- * non-deterministic.
- */
+use http::headers::Headers;
 
 #[derive(Clone)]
 pub struct Response {
@@ -19,9 +11,9 @@ pub struct Response {
     pub status_message: String,
     pub date: String,
     pub body: Vec<u8>,
+    pub headers: Headers,
     head_sent: bool,
-    head: Vec<u8>,
-    headers: BTreeMap<String, String>
+    head: Vec<u8>
 }
 
 impl Response {
@@ -36,16 +28,8 @@ impl Response {
             head_sent: false,
             head: Vec::new(),
             body: Vec::new(),
-            headers: BTreeMap::new()
+            headers: Headers::new()
         }
-    }
-
-    pub fn get_header(&self, name: &str) -> Option<&String> {
-        self.headers.get(&name.to_lowercase())
-    }
-
-    pub fn set_header(&mut self, name: &str, value: &str) {
-        self.headers.insert(name.to_lowercase(), value.into());
     }
 
     pub fn send_head(&mut self, mut stream: &TcpStream) {
@@ -59,12 +43,12 @@ impl Response {
         // Headers
         if !self.headers.contains_key("content-length") {
             let content_length = self.body.len().to_string();
-            self.set_header("content-length", &content_length);
+            self.headers.set("content-length", &content_length);
         }
         let date = self.date.clone();
-        self.set_header("server", "SimpletonHTTP/0.0.0");
-        self.set_header("date", &date);
-        self.set_header("connection", "close");
+        self.headers.set("server", "SimpletonHTTP/0.0.0");
+        self.headers.set("date", &date);
+        self.headers.set("connection", "close");
         for (name, value) in &self.headers {
             let line = format!("{}: {}\n", name, value);
             self.head.extend(line.as_bytes().iter().cloned());
