@@ -12,27 +12,27 @@ use std::process::exit;
 use std::str;
 use std::thread;
 
-use simpleton::http::server::{Options, Request, Response};
+use simpleton::http::{Server, Request, Response};
 
 fn main() {
-    let options = Options::from_args(std::env::args().collect());
+    let server = Server::configured_from_args(std::env::args().collect());
 
-    println!("{}", options.name);
+    println!("{}", server.name);
 
-    let binding = (options.address.as_str(), options.port);
+    let binding = (server.address.as_str(), server.port);
     let listener = match TcpListener::bind(binding) {
         Err(e)       => exit_on_error(e),
         Ok(listener) => listener
     };
-    println!("Listening on {}:{}", options.address, options.port);
+    println!("Listening on {}:{}", server.address, server.port);
 
     for stream in listener.incoming() {
         match stream {
             Err(e)     => exit_on_error(e),
             Ok(stream) => {
-                let options = options.clone();
+                let server = server.clone();
                 thread::spawn(move|| {
-                    handle_client(stream, options)
+                    handle_client(stream, server)
                 });
             }
         }
@@ -41,7 +41,7 @@ fn main() {
     drop(listener);
 }
 
-fn handle_client(stream: TcpStream, options: Options) {
+fn handle_client(stream: TcpStream, server: Server) {
     let address = stream.peer_addr().unwrap().ip();
 
     // Read the request message
@@ -70,7 +70,7 @@ fn handle_client(stream: TcpStream, options: Options) {
 
     // Check HTTP method
     let mut methods = vec!["GET", "HEAD"];
-    if options.allow_trace {
+    if server.allow_trace {
         methods.push("TRACE");
     }
     if let None = methods.iter().find(|&&method| method == req.method) {
@@ -100,12 +100,12 @@ fn handle_client(stream: TcpStream, options: Options) {
     }
 
     // Build local file path from URI
-    let p = String::from(options.root_path) + &req.get_uri();
+    let p = String::from(server.root_path) + &req.get_uri();
     let mut path = PathBuf::from(p);
 
     // Look for directory index file if requested
     if path.is_dir() {
-        for index in &options.directory_indexes {
+        for index in &server.directory_indexes {
             if path.join(index).is_file() {
                 path.push(index);
                 break;
@@ -116,7 +116,7 @@ fn handle_client(stream: TcpStream, options: Options) {
     // Set content-type header based on file extension
     if let Some(extension) = path.extension() {
         let extension = extension.to_str().unwrap();
-        if let Some(content_type) = options.content_types.get(extension) {
+        if let Some(content_type) = server.content_types.get(extension) {
              res.set_header("content-type", content_type);
         }
     }

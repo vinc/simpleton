@@ -6,7 +6,7 @@ use std::net::TcpStream;
 use std::io::BufReader;
 use std::str;
 
-use simpleton::http::server::Request;
+use simpleton::http::Request;
 
 fn main() {
     let mut verbose = false;

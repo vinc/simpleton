@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 #[derive(Clone)]
-pub struct Options {
+pub struct Server {
     pub root_path: String,
     pub name: String,
     pub address: String,
@@ -12,9 +12,9 @@ pub struct Options {
     pub content_types: HashMap<String, String>
 }
 
-impl Options {
-    pub fn from_args(args: Vec<String>) -> Options {
-        let mut options = Options {
+impl Server {
+    pub fn configured_from_args(args: Vec<String>) -> Server {
+        let mut server = Server {
             root_path: ".".into(),
             name: "Simpleton HTTP Server".into(),
             address: "127.0.0.1".into(),
@@ -25,25 +25,25 @@ impl Options {
             content_types: HashMap::new()
         };
 
-        options.content_types.insert("html".into(), "text/html".into());
-        options.content_types.insert("txt".into(),  "text/plain".into());
+        server.content_types.insert("html".into(), "text/html".into());
+        server.content_types.insert("txt".into(),  "text/plain".into());
 
         let args: Vec<_> = args.iter().filter(|&arg| {
             if arg == "--debug" {
-                options.debug = true;
+                server.debug = true;
             }
 
             if arg == "--allow-trace" {
-                options.allow_trace = true;
+                server.allow_trace = true;
             }
 
             !arg.starts_with("--")
         }).collect();
 
         if args.len() > 1 {
-            //options.root_path = args[1]; // FIXME
+            //server.root_path = args[1]; // FIXME
         }
 
-        options
+        server
     }
 }
