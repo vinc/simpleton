@@ -14,9 +14,9 @@ use std::net::TcpStream;
  */
 
 #[derive(Clone)]
-pub struct Response<'a> {
+pub struct Response {
     pub status_code: u16,
-    pub status_message: &'a str,
+    pub status_message: String,
     pub date: String,
     pub body: Vec<u8>,
     head_sent: bool,
@@ -24,14 +24,14 @@ pub struct Response<'a> {
     headers: BTreeMap<String, String>
 }
 
-impl<'a> Response<'a> {
-    pub fn new() -> Response<'a> {
+impl Response {
+    pub fn new() -> Response {
         let time = time::now();
         let date = time::strftime("%a, %d %b %y %T %Z", &time).unwrap();
 
         Response {
             status_code: 200,
-            status_message: "Ok",
+            status_message: "Ok".into(),
             date: date,
             head_sent: false,
             head: Vec::new(),
@@ -52,7 +52,7 @@ impl<'a> Response<'a> {
         // Status line
         let version = "HTTP/1.1";
         let code = self.status_code;
-        let message = self.status_message;
+        let message = self.status_message.clone();
         let line = format!("{} {} {}\n", version, code, message);
         self.head.extend(line.as_bytes().iter().cloned());
 

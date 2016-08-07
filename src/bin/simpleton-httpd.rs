@@ -68,7 +68,7 @@ fn handle_client(stream: TcpStream, opts: Options) {
 
     if req.method != "GET" && req.method != "HEAD" {
         res.status_code = 501;
-        res.status_message = "Not Implemented";
+        res.status_message = "Not Implemented".into();
         res.send(&stream);
         print_log(address, req, res);
         return;
@@ -88,7 +88,7 @@ fn handle_client(stream: TcpStream, opts: Options) {
 
     if let Err(_) = read_file(path.to_str().unwrap(), &mut res.body) {
         res.status_code = 404;
-        res.status_message = "Not Found";
+        res.status_message = "Not Found".into();
         res.send(&stream);
         print_log(address, req, res);
         return;
