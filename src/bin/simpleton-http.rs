@@ -1,24 +1,52 @@
+extern crate simpleton;
+
 use std::env;
 use std::io::prelude::*;
 use std::net::TcpStream;
+use std::io::BufReader;
 use std::str;
 
+use simpleton::http::server::Request;
+
 fn main() {
-    let mut args = env::args();
-    let _    = args.next();
-    let host = args.next().unwrap();
-    let path = args.next().unwrap();
+    let mut verbose = false;
 
-    let user_agent = "SimpletonHTTP/0.0.0";
+    let args: Vec<_> = env::args().filter(|arg| {
+        if arg == "--verbose" {
+            verbose = true;
+        }
+        !arg.starts_with("--")
+    }).collect();
 
-    let mut stream = TcpStream::connect(host.as_str()).unwrap();
-    let _ = stream.write(format!("GET {} HTTP/1.1\n", path).as_bytes());
-    let _ = stream.write(format!("Host: {}\n", host).as_bytes());
-    let _ = stream.write(format!("User-Agent: {}\n", user_agent).as_bytes());
-    let _ = stream.write(b"Accept: */*\n");
-    let _ = stream.write(b"\n");
+    if args.len() < 3 {
+        println!("Usage: simpleton-http [--verbose] <host> <path>");
+        return;
+    }
 
-    let mut buf: Vec<u8> = vec![];
-    let _ = stream.read_to_end(&mut buf);
-    println!("{}", str::from_utf8(&buf).unwrap());
+    let host = &args[1];
+    let path = &args[2];
+
+    let mut req = Request::new("GET", &host, &path);
+
+    let stream = TcpStream::connect(host.as_str()).unwrap();
+
+    req.send(&stream);
+
+    let mut is_header = true;
+    let reader = BufReader::new(&stream);
+    for line in reader.lines() {
+        match line {
+            Err(_) => continue,
+            Ok(line) => {
+                if is_header && verbose {
+                    println!("> {}", line);
+                } else {
+                    println!("{}", line);
+                }
+                if line == "" {
+                    is_header = false;
+                }
+            }
+        }
+    }
 }

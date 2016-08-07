@@ -1,14 +1,33 @@
 use std::collections::BTreeMap;
+use std::io::prelude::*;
+use std::net::TcpStream;
 use std::path::{Path, PathBuf, Component};
 
 #[derive(Clone)]
 pub struct Request {
     pub method: String,
     pub uri: String,
-    pub version: String
+    pub version: String,
+    headers: BTreeMap<String, String>
 }
 
 impl Request {
+    pub fn new(method: &str, host: &str, uri: &str) -> Request {
+        let user_agent = "SimpletonHTTP/0.0.0";
+        let version = "HTTP/1.1";
+        let mut req = Request {
+            method:  method.into(),
+            uri:     uri.into(),
+            version: version.into(),
+            headers: BTreeMap::new()
+        };
+        req.set_header("host".into(), host.into());
+        req.set_header("user-agent".into(), user_agent.into());
+        req.set_header("accept".into(), "*/*".into());
+
+        req
+    }
+
     pub fn from_str(message: &str) -> Result<Request, String> {
         let mut lines = message.lines();
 
@@ -21,21 +40,21 @@ impl Request {
         if req_line_fields.len() != 3 {
             return Err("Could not parse request line".into());
         }
-        let req = Request {
+        let mut req = Request {
             method:  req_line_fields[0].into(),
             uri:     req_line_fields[1].into(),
-            version: req_line_fields[2].into()
+            version: req_line_fields[2].into(),
+            headers: BTreeMap::new()
         };
 
         // Parse the headers
-        let mut req_headers = BTreeMap::new();
         for line in lines {
             let mut fields = line.splitn(2, ":");
             if let Some(field_name) = fields.next() {
                 if let Some(field_value) = fields.next() {
                     let name = field_name.trim();
                     let value = field_value.trim();
-                    req_headers.insert(name, value);
+                    req.set_header(name, value);
                 }
             }
             if line == "" {
@@ -45,6 +64,12 @@ impl Request {
         
         Ok(req)
     }
+
+    // TODO: this code is duplicated in `response.rs`
+    pub fn set_header(&mut self, name: &str, value: &str) {
+        self.headers.insert(name.to_lowercase(), value.into());
+    }
+
     pub fn get_uri(&self) -> String {
         let mut components = vec![];
 
@@ -62,5 +87,23 @@ impl Request {
             path.push(component);
         }
         path.to_str().unwrap().to_string()
+    }
+
+    pub fn send(&mut self, mut stream: &TcpStream) {
+        let mut head = Vec::new();
+
+        let uri = self.uri.clone();
+        let method = self.method.clone();
+        let version = self.version.clone();
+        let line = format!("{} {} {}\n", method, uri, version);
+        head.extend(line.as_bytes().iter().cloned());
+
+        for (name, value) in &self.headers {
+            let line = format!("{}: {}\n", name, value);
+            head.extend(line.as_bytes().iter().cloned());
+        }
+
+        let _ = stream.write(&head);
+        let _ = stream.write(b"\n");
     }
 }
