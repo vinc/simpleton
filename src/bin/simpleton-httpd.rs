@@ -4,6 +4,7 @@ extern crate simpleton;
 use std::error::Error;
 use std::fs::File;
 use std::io::prelude::*;
+use std::io::BufReader;
 use std::net::{TcpListener, TcpStream};
 use std::path::PathBuf;
 use std::process::exit;
@@ -37,17 +38,29 @@ fn main() {
     drop(listener);
 }
 
-fn handle_client(mut stream: TcpStream, opts: Options) {
+fn handle_client(stream: TcpStream, opts: Options) {
     if opts.debug {
         println!("");
     }
     
-    //let mut buf: Vec<u8> = vec![];
-    //let _ = stream.read_to_end(&mut buf);
-    let mut buf = [0; 256];
-    let _ = stream.read(&mut buf);
+    // Read the request message
+    let mut lines = vec![];
+    let reader = BufReader::new(&stream);
+    for line in reader.lines() {
+        match line {
+            Err(_) => return,
+            Ok(line) => {
+                if line == "" {
+                    break
+                } else {
+                    lines.push(line)
+                }
+            }
+        }
+    }
+    let buf = lines.join("\n");
 
-    let req = match Request::from_str(str::from_utf8(&buf).unwrap()) {
+    let req = match Request::from_str(&buf) {
         Err(_)  => return,
         Ok(req) => req
     };
