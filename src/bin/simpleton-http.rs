@@ -32,14 +32,22 @@ fn main() {
 
     req.send(&stream);
 
+    if verbose {
+        for line in req.to_string().lines() {
+            println!("< {}", line);
+        }
+    }
+
     let mut is_header = true;
     let reader = BufReader::new(&stream);
     for line in reader.lines() {
         match line {
             Err(_) => continue,
             Ok(line) => {
-                if is_header && verbose {
-                    println!("> {}", line);
+                if is_header {
+                    if verbose {
+                        println!("> {}", line);
+                    }
                 } else {
                     println!("{}", line);
                 }
