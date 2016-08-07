@@ -15,23 +15,23 @@ use std::thread;
 use simpleton::http::server::{Options, Request, Response};
 
 fn main() {
-    let opts = Options::from_args(std::env::args().collect());
+    let options = Options::from_args(std::env::args().collect());
 
-    println!("{}", opts.name);
+    println!("{}", options.name);
 
-    let listener = match TcpListener::bind((opts.address, opts.port)) {
+    let listener = match TcpListener::bind((options.address, options.port)) {
         Err(e)       => exit_on_error(e),
         Ok(listener) => listener
     };
-    println!("Listening on {}:{}", opts.address, opts.port);
+    println!("Listening on {}:{}", options.address, options.port);
 
     for stream in listener.incoming() {
         match stream {
             Err(e)     => exit_on_error(e),
             Ok(stream) => {
-                let opts = opts.clone();
+                let options = options.clone();
                 thread::spawn(move|| {
-                    handle_client(stream, opts)
+                    handle_client(stream, options)
                 });
             }
         }
@@ -40,7 +40,7 @@ fn main() {
     drop(listener);
 }
 
-fn handle_client(stream: TcpStream, opts: Options) {
+fn handle_client(stream: TcpStream, options: Options) {
     let address = stream.peer_addr().unwrap().ip();
 
     // Read the request message
@@ -68,7 +68,7 @@ fn handle_client(stream: TcpStream, opts: Options) {
     let mut res = Response::new();
 
     let mut methods = vec!["GET", "HEAD"];
-    if opts.allow_trace {
+    if options.allow_trace {
         methods.push("TRACE");
     }
     if let None = methods.iter().find(|&&method| method == req.method) {
@@ -87,10 +87,10 @@ fn handle_client(stream: TcpStream, opts: Options) {
         return;
     }
 
-    let p = String::from(opts.root_path) + &req.get_uri();
+    let p = String::from(options.root_path) + &req.get_uri();
     let mut path = PathBuf::from(p);
     if path.is_dir() {
-        for index in &opts.directory_indexes {
+        for index in &options.directory_indexes {
             if path.join(index).is_file() {
                 path.push(index);
                 break;

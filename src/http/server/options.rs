@@ -11,7 +11,7 @@ pub struct Options<'a> {
 
 impl<'a> Options<'a> {
     pub fn from_args(args: Vec<String>) -> Options<'a> {
-        let mut opts = Options {
+        let mut options = Options {
             root_path: ".",
             name: "Simpleton HTTP Server",
             address: "127.0.0.1",
@@ -23,20 +23,20 @@ impl<'a> Options<'a> {
 
         let args: Vec<_> = args.iter().filter(|&arg| {
             if arg == "--debug" {
-                opts.debug = true;
+                options.debug = true;
             }
 
             if arg == "--allow-trace" {
-                opts.allow_trace = true;
+                options.allow_trace = true;
             }
 
             !arg.starts_with("--")
         }).collect();
 
         if args.len() > 1 {
-            //opts.root_path = args[1]; // FIXME
+            //options.root_path = args[1]; // FIXME
         }
 
-        opts
+        options
     }
 }
