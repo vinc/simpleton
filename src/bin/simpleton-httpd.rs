@@ -99,6 +99,13 @@ fn handle_client(stream: TcpStream, options: Options) {
         }
     } // NOTE: we could check 404 here with `else if !path.is_file()`
 
+    if let Some(extension) = path.extension() {
+        let extension = extension.to_str().unwrap();
+        if let Some(content_type) = options.content_types.get(extension) {
+             res.set_header("content-type", content_type);
+        }
+    }
+
     if let Err(_) = read_file(path.to_str().unwrap(), &mut res.body) {
         res.status_code = 404;
         res.status_message = "Not Found".into();
@@ -106,8 +113,6 @@ fn handle_client(stream: TcpStream, options: Options) {
         print_log(address, req, res);
         return;
     }
-
-    res.set_header("content-type", "text/html; charset=utf-8");
 
     if req.method == "HEAD" {
         res.send_head(&stream);

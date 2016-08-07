@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(Clone)]
 pub struct Options {
     pub root_path: String,
@@ -6,7 +8,8 @@ pub struct Options {
     pub port: u16,
     pub debug: bool,
     pub allow_trace: bool,
-    pub directory_indexes: Vec<String>
+    pub directory_indexes: Vec<String>,
+    pub content_types: HashMap<String, String>
 }
 
 impl Options {
@@ -18,8 +21,12 @@ impl Options {
             port: 3000,
             debug: false,
             allow_trace: false,
-            directory_indexes: vec!["index.htm".into(), "index.html".into()]
+            directory_indexes: vec!["index.htm".into(), "index.html".into()],
+            content_types: HashMap::new()
         };
+
+        options.content_types.insert("html".into(), "text/html".into());
+        options.content_types.insert("txt".into(),  "text/plain".into());
 
         let args: Vec<_> = args.iter().filter(|&arg| {
             if arg == "--debug" {
