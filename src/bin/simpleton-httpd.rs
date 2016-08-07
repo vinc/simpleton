@@ -68,6 +68,7 @@ fn handle_client(stream: TcpStream, options: Options) {
 
     let mut res = Response::new();
 
+    // Check HTTP method
     let mut methods = vec!["GET", "HEAD"];
     if options.allow_trace {
         methods.push("TRACE");
@@ -81,6 +82,16 @@ fn handle_client(stream: TcpStream, options: Options) {
     }
 
     if req.method == "TRACE" {
+        // The TRACE method is used to invoke a remote, application-layer
+        // loop-back of the request message. The final recipient of the
+        // request SHOULD reflect the message received back to the client
+        // as the entity-body of a 200 (OK) response.
+        //
+        // If the request is valid, the response SHOULD contain the entire
+        // request message in the entity-body, with a Content-Type of
+        // "message/http".
+        //
+        // (RFC 2616 9.8)
         res.set_header("content-type", "message/http");
         res.body = request_message.as_bytes().to_vec();
         res.send(&stream);
@@ -88,8 +99,11 @@ fn handle_client(stream: TcpStream, options: Options) {
         return;
     }
 
+    // Build local file path from URI
     let p = String::from(options.root_path) + &req.get_uri();
     let mut path = PathBuf::from(p);
+
+    // Look for directory index file if requested
     if path.is_dir() {
         for index in &options.directory_indexes {
             if path.join(index).is_file() {
@@ -99,6 +113,7 @@ fn handle_client(stream: TcpStream, options: Options) {
         }
     } // NOTE: we could check 404 here with `else if !path.is_file()`
 
+    // Set content-type header based on file extension
     if let Some(extension) = path.extension() {
         let extension = extension.to_str().unwrap();
         if let Some(content_type) = options.content_types.get(extension) {
@@ -106,6 +121,7 @@ fn handle_client(stream: TcpStream, options: Options) {
         }
     }
 
+    // Read file
     if let Err(_) = read_file(path.to_str().unwrap(), &mut res.body) {
         res.status_code = 404;
         res.status_message = "Not Found".into();
@@ -115,8 +131,12 @@ fn handle_client(stream: TcpStream, options: Options) {
     }
 
     if req.method == "HEAD" {
+        // The HEAD method is identical to GET except that the server MUST NOT
+        // return a message-body in the response.
+        //
+        // (RFC 2616 9.4)
         res.send_head(&stream);
-    } else {
+    } else { // GET method
         res.send(&stream);
     }
 
