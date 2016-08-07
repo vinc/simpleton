@@ -1,7 +1,6 @@
 extern crate time;
 extern crate simpleton;
 
-use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::io::prelude::*;
@@ -48,39 +47,10 @@ fn handle_client(mut stream: TcpStream, opts: Options) {
     let mut buf = [0; 256];
     let _ = stream.read(&mut buf);
 
-    let mut lines = str::from_utf8(&buf).unwrap().lines();
-
-    // Parse the request line
-    let req_line = lines.next().unwrap();
-    let req_line_fields: Vec<&str> = req_line.split_whitespace().collect();
-    // TODO: Check req_lien_fields
-    let req = Request {
-        method:  req_line_fields[0],
-        uri:     req_line_fields[1],
-        version: req_line_fields[2],
+    let req = match Request::from_str(str::from_utf8(&buf).unwrap()) {
+        Err(_)  => return,
+        Ok(req) => req
     };
-    if opts.debug {
-        println!("> {} {} {}", req.method, req.uri, req.version);
-    }
-
-    // Parse the headers
-    let mut req_headers = HashMap::new();
-    for line in lines {
-        if opts.debug {
-            println!("> {}", line);
-        }
-        let mut fields = line.splitn(2, ":");
-        if let Some(field_name) = fields.next() {
-            if let Some(field_value) = fields.next() {
-                let name = field_name.trim();
-                let value = field_value.trim();
-                req_headers.insert(name, value);
-            }
-        }
-        if line == "" {
-            break; // End of headers
-        }
-    }
 
     let mut res = Response::new();
 
@@ -111,15 +81,12 @@ fn handle_client(mut stream: TcpStream, opts: Options) {
                 res.status_message = "Not Found";
             },
             Ok(mut file) => {
-                match file.read_to_end(&mut res.body) {
-                    Err(_) => {
-                        if opts.debug {
-                            println!("ERROR: could not read file");
-                        }
-                        res.status_code = 404;
-                        res.status_message = "Not Found";
+                if let Err(_) = file.read_to_end(&mut res.body) {
+                    if opts.debug {
+                        println!("ERROR: could not read file");
                     }
-                    Ok(_) => { }
+                    res.status_code = 404;
+                    res.status_message = "Not Found";
                 }
             }
         }
