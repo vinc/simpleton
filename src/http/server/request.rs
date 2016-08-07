@@ -1,15 +1,15 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf, Component};
 
-#[derive(Copy, Clone)]
-pub struct Request<'a> {
-    pub method: &'a str,
-    pub uri: &'a str,
-    pub version: &'a str
+#[derive(Clone)]
+pub struct Request {
+    pub method: String,
+    pub uri: String,
+    pub version: String
 }
 
-impl<'a> Request<'a> {
-    pub fn from_str(message: &'a str) -> Result<Request, String> {
+impl Request {
+    pub fn from_str(message: &str) -> Result<Request, String> {
         let mut lines = message.lines();
 
         // Parse the request line
@@ -22,9 +22,9 @@ impl<'a> Request<'a> {
             return Err("Could not parse request line".into());
         }
         let req = Request {
-            method:  req_line_fields[0],
-            uri:     req_line_fields[1],
-            version: req_line_fields[2],
+            method:  req_line_fields[0].into(),
+            uri:     req_line_fields[1].into(),
+            version: req_line_fields[2].into()
         };
 
         // Parse the headers
@@ -49,7 +49,7 @@ impl<'a> Request<'a> {
         let mut components = vec![];
 
         // Rebuild URL to prevent path traversory attack
-        for component in Path::new(self.uri).components() {
+        for component in Path::new(&self.uri).components() {
             match component {
                 Component::ParentDir => { components.pop(); },
                 Component::Normal(s) => { components.push(s.to_str().unwrap()); },
