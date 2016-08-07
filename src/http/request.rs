@@ -106,3 +106,24 @@ impl Request {
         lines.join("\n")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new() {
+        let req = Request::new("GET", "example.com", "/");
+
+        assert_eq!(req.method, String::from("GET"));
+        assert_eq!(req.headers.get("host"), Some(&"example.com".into()));
+        assert_eq!(req.uri, String::from("/"));
+    }
+
+    #[test]
+    fn test_to_string() {
+        let req = Request::new("GET", "example.com", "/");
+
+        assert!(req.to_string().starts_with("GET / HTTP/1.1\n"));
+    }
+}

@@ -73,3 +73,22 @@ impl Response {
         let _ = stream.write(&self.body);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new() {
+        let res = Response::new();
+
+        assert_eq!(res.status_code, 200);
+    }
+
+    #[test]
+    fn test_to_string() {
+        let res = Response::new();
+
+        assert!(res.to_string().starts_with("HTTP/1.1 200 Ok\n"));
+    }
+}

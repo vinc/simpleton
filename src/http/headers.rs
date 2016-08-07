@@ -40,12 +40,32 @@ impl<'a> IntoIterator for &'a Headers {
     }
 }
 
-/*
-impl Iterator for Headers {
-    type Item = (String, String);
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    fn next(&mut self) -> Option<(String, String)> {
-        self.headers.next()
+    #[test]
+    fn test_set() {
+        let mut headers = Headers::new();
+
+        headers.set("content-type".into(), "text/html".into());
+        assert_eq!(headers.get("content-type"), Some(&"text/html".into()));
+
+        // The name of the header is case insensitive
+        headers.set("Content-Type".into(), "text/plain".into());
+        assert_eq!(headers.get("content-type"), Some(&"text/plain".into()));
+    }
+
+    #[test]
+    fn test_get() {
+        let mut headers = Headers::new();
+
+        assert_eq!(headers.get("not-set"), None);
+
+        headers.set("content-type".into(), "text/html".into());
+        assert_eq!(headers.get("content-type"), Some(&"text/html".into()));
+
+        // The name of the header is case insensitive
+        assert_eq!(headers.get("Content-Type"), Some(&"text/html".into()));
     }
 }
-*/

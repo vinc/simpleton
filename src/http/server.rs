@@ -48,3 +48,24 @@ impl Server {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new() {
+        let server = Server::new();
+
+        assert_eq!(server.port, 3000);
+    }
+
+    #[test]
+    fn test_configure_from_args() {
+        let mut server = Server::new();
+
+        assert_eq!(server.debug, false);
+        server.configure_from_args(vec!["--debug".into()]);
+        assert_eq!(server.debug, true);
+    }
+}
