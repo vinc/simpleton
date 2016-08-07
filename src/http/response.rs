@@ -12,8 +12,7 @@ pub struct Response {
     pub date: String,
     pub body: Vec<u8>,
     pub headers: Headers,
-    head_sent: bool,
-    head: Vec<u8>
+    head_sent: bool
 }
 
 impl Response {
@@ -26,21 +25,33 @@ impl Response {
             status_message: "Ok".into(),
             date: date,
             head_sent: false,
-            head: Vec::new(),
             body: Vec::new(),
             headers: Headers::new()
         }
     }
 
-    pub fn send_head(&mut self, mut stream: &TcpStream) {
+    pub fn to_string(&self) -> String {
+        let mut lines = vec![];
+
         // Status line
         let version = "HTTP/1.1";
         let code = self.status_code;
         let message = self.status_message.clone();
-        let line = format!("{} {} {}\n", version, code, message);
-        self.head.extend(line.as_bytes().iter().cloned());
+        lines.push(format!("{} {} {}", version, code, message));
 
         // Headers
+        for (name, value) in &self.headers {
+            lines.push(format!("{}: {}", name, value));
+        }
+
+        // End of head
+        lines.push("\n".into());
+
+        lines.join("\n")
+    }
+
+    pub fn send_head(&mut self, mut stream: &TcpStream) {
+        // Set headers
         if !self.headers.contains_key("content-length") {
             let content_length = self.body.len().to_string();
             self.headers.set("content-length", &content_length);
@@ -49,14 +60,9 @@ impl Response {
         self.headers.set("server", "SimpletonHTTP/0.0.0");
         self.headers.set("date", &date);
         self.headers.set("connection", "close");
-        for (name, value) in &self.headers {
-            let line = format!("{}: {}\n", name, value);
-            self.head.extend(line.as_bytes().iter().cloned());
-        }
 
-        let _ = stream.write(&self.head);
-        let _ = stream.write(b"\n");
-
+        // Send head
+        let _ = stream.write(&self.to_string().into_bytes());
         self.head_sent = true;
     }
 

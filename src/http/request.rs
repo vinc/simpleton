@@ -9,8 +9,7 @@ pub struct Request {
     pub method: String,
     pub uri: String,
     pub version: String,
-    pub headers: Headers,
-    head: Vec<u8>,
+    pub headers: Headers
 }
 
 impl Request {
@@ -21,7 +20,6 @@ impl Request {
             method:  method.into(),
             uri:     uri.into(),
             version: version.into(),
-            head: Vec::new(),
             headers: Headers::new()
         };
         req.headers.set("host".into(), host.into());
@@ -47,7 +45,6 @@ impl Request {
             method:  req_line_fields[0].into(),
             uri:     req_line_fields[1].into(),
             version: req_line_fields[2].into(),
-            head: Vec::new(),
             headers: Headers::new()
         };
 
@@ -89,23 +86,23 @@ impl Request {
     }
 
     pub fn send(&mut self, mut stream: &TcpStream) {
-        let uri = self.uri.clone();
-        let method = self.method.clone();
-        let version = self.version.clone();
-        let line = format!("{} {} {}\n", method, uri, version);
-        self.head.extend(line.as_bytes().iter().cloned());
-
-        for (name, value) in &self.headers {
-            let line = format!("{}: {}\n", name, value);
-            self.head.extend(line.as_bytes().iter().cloned());
-        }
-        self.head.push(b'\n');
-
-        let _ = stream.write(&self.head);
+        let _ = stream.write(&self.to_string().into_bytes());
     }
 
     pub fn to_string(&self) -> String {
-        let head = self.head.clone();
-        String::from_utf8(head).unwrap()
+        let mut lines = vec![];
+
+        // Request line
+        lines.push(format!("{} {} {}", self.method, self.uri, self.version));
+
+        // Headers
+        for (name, value) in &self.headers {
+            lines.push(format!("{}: {}", name, value));
+        }
+
+        // End of head
+        lines.push("\n".into());
+
+        lines.join("\n")
     }
 }
