@@ -64,7 +64,9 @@ fn handle_client(mut stream: TcpStream, opts: Options) {
                 break;
             }
         }
-    } else if !path.is_file() {
+    } else if path.is_file() {
+        // TODO: Get content type from extension
+    } else {
         // TODO: 404
     }
     if opts.debug {
@@ -72,23 +74,12 @@ fn handle_client(mut stream: TcpStream, opts: Options) {
     }
 
     if req.method == "GET" {
-        match File::open(path) {
-            Err(_) => {
-                if opts.debug {
-                    println!("ERROR: could not open file");
-                }
-                res.status_code = 404;
-                res.status_message = "Not Found";
-            },
-            Ok(mut file) => {
-                if let Err(_) = file.read_to_end(&mut res.body) {
-                    if opts.debug {
-                        println!("ERROR: could not read file");
-                    }
-                    res.status_code = 404;
-                    res.status_message = "Not Found";
-                }
+        if let Err(e) = read_file(path.to_str().unwrap(), &mut res.body) {
+            if opts.debug {
+                println!("ERROR: {}", e);
             }
+            res.status_code = 404;
+            res.status_message = "Not Found";
         }
     }
 
@@ -96,6 +87,18 @@ fn handle_client(mut stream: TcpStream, opts: Options) {
     res.send(&stream);
 
     print_log(req, res, &stream);
+}
+
+fn read_file(path: &str, buf: &mut Vec<u8>) -> Result<(), String> {
+    match File::open(path) {
+        Err(_) => return Err("Could not parse request line".into()),
+        Ok(mut file) => {
+            if let Err(_) = file.read_to_end(buf) {
+                return Err("Could not parse request line".into())
+            }
+        }
+    }
+    Ok(())
 }
 
 fn print_log(req: Request, res: Response, stream: &TcpStream) {
