@@ -82,7 +82,7 @@ impl Request {
     }
 
     /// Get the normalized URI of a `Request`.
-    pub fn get_uri(&self) -> String {
+    pub fn canonicalized_uri(&self) -> String {
         let mut components = vec![];
 
         // Rebuild URL to prevent path traversory attack
@@ -144,5 +144,20 @@ mod tests {
         let req = Request::new("GET", "example.com", "/");
 
         assert!(req.to_string().starts_with("GET / HTTP/1.1\n"));
+    }
+
+    #[test]
+    fn test_canonicalized_uri() {
+        let req = Request::new("GET", "example.com", "/../aa");
+        assert_eq!(req.uri, "/../aa");
+        assert_eq!(req.canonicalized_uri(), "/aa");
+
+        let req = Request::new("GET", "example.com", "/../aa/../bb");
+        assert_eq!(req.uri, "/../aa/../bb");
+        assert_eq!(req.canonicalized_uri(), "/bb");
+
+        let req = Request::new("GET", "example.com", "/aa/");
+        assert_eq!(req.uri, "/aa/");
+        assert_eq!(req.canonicalized_uri(), "/aa");
     }
 }

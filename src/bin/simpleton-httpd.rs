@@ -106,18 +106,29 @@ fn handle_client(stream: TcpStream, server: Server) {
     }
 
     // Build local file path from URI
-    let p = String::from(server.root_path) + &req.get_uri();
-    let mut path = PathBuf::from(p);
+    let req_path = String::from(server.root_path) + &req.canonicalized_uri();
+    let mut path = PathBuf::from(&req_path);
 
-    // Look for directory index file if requested
     if path.is_dir() {
+        // Trailing slash redirect
+        if !req.uri.ends_with("/") {
+            let redirect_uri = req.uri.clone() + "/";
+            res.status_code = 301;
+            res.status_message = "Moved Permanently".into();
+            res.headers.set("location", &redirect_uri);
+            res.send(&stream);
+            print_log(address, req, res);
+            return;
+        }
+
+        // Directory index file
         for index in &server.directory_indexes {
             if path.join(index).is_file() {
                 path.push(index);
                 break;
             }
         }
-    } // NOTE: we could check 404 here with `else if !path.is_file()`
+    }
 
     // Set content-type header based on file extension
     if let Some(extension) = path.extension() {
