@@ -11,7 +11,7 @@ use http::response::Response;
 /// HTTP server
 #[derive(Clone)]
 pub struct Server {
-    pub middlewares: Vec<fn(Request, Response, TcpStream, Server)>,
+    pub handlers: Vec<fn(Request, Response, TcpStream, Server)>,
     pub root_path: String,
     pub name: String,
     pub address: String,
@@ -29,7 +29,7 @@ impl Server {
         content_types.insert("txt".into(),  "text/plain".into());
 
         Server {
-            middlewares: Vec::new(),
+            handlers: Vec::new(),
             root_path: ".".into(),
             name: "Simpleton HTTP Server".into(),
             address: "127.0.0.1".into(),
@@ -41,8 +41,8 @@ impl Server {
         }
     }
 
-    pub fn add_middleware(&mut self, f: fn(Request, Response, TcpStream, Server)) {
-        self.middlewares.push(f);
+    pub fn add_handler(&mut self, f: fn(Request, Response, TcpStream, Server)) {
+        self.handlers.push(f);
     }
 
     pub fn configure_from_args(&mut self, args: Vec<String>) {
@@ -132,13 +132,13 @@ impl Server {
 
         let res = Response::new();
 
-        for middleware in &server.middlewares {
+        for handler in &server.handlers {
             let server = server.clone();
             let req = req.clone();
             let res = res.clone();
             match stream.try_clone() {
                 Ok(stream) => {
-                    middleware(req, res, stream, server);
+                    handler(req, res, stream, server);
                 },
                 Err(e) => { panic!("{}", e) }
             }
