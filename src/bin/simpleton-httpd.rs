@@ -11,9 +11,9 @@ use std::str;
 use simpleton::http::{Server, Request, Response};
 
 fn main() {
-    let mut server = Server::new(handle_connection);
-
+    let mut server = Server::new();
     server.configure_from_args(std::env::args().collect());
+    server.add_middleware(static_files);
 
     println!("{}", server.name);
     println!("Listening on {}:{}", server.address, server.port);
@@ -21,7 +21,7 @@ fn main() {
     server.listen();
 }
 
-fn handle_connection(req: Request, mut res: Response, stream: TcpStream, server: Server) {
+fn static_files(req: Request, mut res: Response, stream: TcpStream, server: Server) {
     let address = match stream.peer_addr() {
         Err(_)        => return,
         Ok(peer_addr) => peer_addr.ip()

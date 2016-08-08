@@ -11,7 +11,7 @@ use http::response::Response;
 /// HTTP server
 #[derive(Clone)]
 pub struct Server {
-    pub handle: fn(Request, Response, TcpStream, Server),
+    pub middlewares: Vec<fn(Request, Response, TcpStream, Server)>,
     pub root_path: String,
     pub name: String,
     pub address: String,
@@ -23,13 +23,13 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new(f: fn(Request, Response, TcpStream, Server)) -> Server {
+    pub fn new() -> Server {
         let mut content_types = HashMap::new();
         content_types.insert("html".into(), "text/html".into());
         content_types.insert("txt".into(),  "text/plain".into());
 
         Server {
-            handle: f,
+            middlewares: Vec::new(),
             root_path: ".".into(),
             name: "Simpleton HTTP Server".into(),
             address: "127.0.0.1".into(),
@@ -39,6 +39,10 @@ impl Server {
             directory_indexes: vec!["index.htm".into(), "index.html".into()],
             content_types: content_types
         }
+    }
+
+    pub fn add_middleware(&mut self, f: fn(Request, Response, TcpStream, Server)) {
+        self.middlewares.push(f);
     }
 
     pub fn configure_from_args(&mut self, args: Vec<String>) {
@@ -128,12 +132,17 @@ impl Server {
 
         let res = Response::new();
 
-        match stream.try_clone() {
-            Ok(stream) => {
-                (server.handle)(req, res, stream, server);
-            },
-            Err(e) => { panic!("{}", e) }
-        };
+        for middleware in &server.middlewares {
+            let server = server.clone();
+            let req = req.clone();
+            let res = res.clone();
+            match stream.try_clone() {
+                Ok(stream) => {
+                    middleware(req, res, stream, server);
+                },
+                Err(e) => { panic!("{}", e) }
+            }
+        }
     }
 
 #[cfg(test)]
