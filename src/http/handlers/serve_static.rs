@@ -8,6 +8,7 @@ use http::request::Request;
 use http::response::Response;
 
 pub fn handler(req: Request, mut res: Response, stream: TcpStream) {
+    // FIXME: use handler config instead of server config
     let server = res.server.clone();
 
     // Check HTTP method

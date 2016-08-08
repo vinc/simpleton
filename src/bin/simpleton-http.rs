@@ -6,7 +6,7 @@ use std::io::prelude::*;
 use std::net::TcpStream;
 use std::str;
 
-use simpleton::http::{Request, Server};
+use simpleton::http::Request;
 
 fn main() {
     let mut verbose = false;
@@ -26,8 +26,7 @@ fn main() {
     let host = &args[1];
     let path = &args[2];
 
-    let server = Server::new();
-    let mut req = Request::new("GET", &host, &path, server);
+    let mut req = Request::new("GET", &host, &path);
 
     let mut address = host.clone();
     if !host.contains(":") {

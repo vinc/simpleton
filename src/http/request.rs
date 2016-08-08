@@ -4,7 +4,6 @@ use std::net::TcpStream;
 use std::path::{Path, PathBuf, Component};
 
 use http::headers::Headers;
-use http::server::Server;
 
 /// HTTP request message
 #[derive(Clone)]
@@ -23,22 +22,19 @@ pub struct Request {
     /// The Request-Header fields allow the client to pass additional
     /// information about the request, and about the client itself, to
     /// the server.
-    pub headers: Headers,
-
-    pub server: Server
+    pub headers: Headers
 }
 
 impl Request {
     /// Create an HTTP message request.
-    pub fn new(method: &str, host: &str, uri: &str, server: Server) -> Request {
+    pub fn new(method: &str, host: &str, uri: &str) -> Request {
         let user_agent = "SimpletonHTTP/0.0.0";
         let version = "HTTP/1.1";
         let mut req = Request {
             method:  method.into(),
             uri:     uri.into(),
             version: version.into(),
-            headers: Headers::new(),
-            server: server
+            headers: Headers::new()
         };
         req.headers.set("host".into(), host.into());
         req.headers.set("user-agent".into(), user_agent.into());
@@ -48,7 +44,7 @@ impl Request {
     }
 
     /// Create a `Request` from a raw HTTP request message.
-    pub fn from_str(message: &str, server: Server) -> Result<Request, String> {
+    pub fn from_str(message: &str) -> Result<Request, String> {
         let mut lines = message.lines();
 
         // Parse the request line
@@ -64,8 +60,7 @@ impl Request {
             method:  req_line_fields[0].into(),
             uri:     req_line_fields[1].into(),
             version: req_line_fields[2].into(),
-            headers: Headers::new(),
-            server: server
+            headers: Headers::new()
         };
 
         // Parse the headers
@@ -135,12 +130,9 @@ impl fmt::Display for Request {
 mod tests {
     use super::*;
 
-    use http::server::Server;
-
     #[test]
     fn test_new() {
-        let server = Server::new();
-        let req = Request::new("GET", "example.com", "/", server);
+        let req = Request::new("GET", "example.com", "/");
         assert_eq!(req.method, String::from("GET"));
         assert_eq!(req.headers.get("host"), Some(&"example.com".into()));
         assert_eq!(req.uri, String::from("/"));
@@ -148,25 +140,21 @@ mod tests {
 
     #[test]
     fn test_to_string() {
-        let server = Server::new();
-        let req = Request::new("GET", "example.com", "/", server);
+        let req = Request::new("GET", "example.com", "/");
         assert!(req.to_string().starts_with("GET / HTTP/1.1\n"));
     }
 
     #[test]
     fn test_canonicalized_uri() {
-        let server = Server::new();
-        let req = Request::new("GET", "example.com", "/../aa", server);
+        let req = Request::new("GET", "example.com", "/../aa");
         assert_eq!(req.uri, "/../aa");
         assert_eq!(req.canonicalized_uri(), "/aa");
 
-        let server = Server::new();
-        let req = Request::new("GET", "example.com", "/../aa/../bb", server);
+        let req = Request::new("GET", "example.com", "/../aa/../bb");
         assert_eq!(req.uri, "/../aa/../bb");
         assert_eq!(req.canonicalized_uri(), "/bb");
 
-        let server = Server::new();
-        let req = Request::new("GET", "example.com", "/aa/", server);
+        let req = Request::new("GET", "example.com", "/aa/");
         assert_eq!(req.uri, "/aa/");
         assert_eq!(req.canonicalized_uri(), "/aa");
     }

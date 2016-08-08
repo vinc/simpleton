@@ -109,7 +109,7 @@ fn handle_client(stream: TcpStream, server: Server) {
     }
     let request_message = lines.join("\n");
 
-    let req = match Request::from_str(&request_message, server.clone()) {
+    let req = match Request::from_str(&request_message) {
         Err(_)  => return,
         Ok(req) => req
     };
