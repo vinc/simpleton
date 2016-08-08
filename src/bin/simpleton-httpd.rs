@@ -45,7 +45,10 @@ fn main() {
 }
 
 fn handle_client(stream: TcpStream, server: Server) {
-    let address = stream.peer_addr().unwrap().ip();
+    let address = match stream.peer_addr() {
+        Err(_)        => return,
+        Ok(peer_addr) => peer_addr.ip()
+    };
 
     // Read the request message
     let mut lines = vec![];
@@ -160,7 +163,7 @@ fn read_file(path: &str, buf: &mut Vec<u8>) -> Result<(), String> {
 
 fn print_log(address: IpAddr, req: Request, res: Response) {
     println!(
-        "{} - - [{}] \"{} {} {}\" {}",
+        "{} - - [{}] \"{} {} {}\" {} -",
         address,
         res.date,
         req.method,
