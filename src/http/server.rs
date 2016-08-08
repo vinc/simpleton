@@ -15,7 +15,11 @@ pub struct Server {
 
 impl Server {
     pub fn new() -> Server {
-        let mut server = Server {
+        let mut content_types = HashMap::new();
+        content_types.insert("html".into(), "text/html".into());
+        content_types.insert("txt".into(),  "text/plain".into());
+
+        Server {
             root_path: ".".into(),
             name: "Simpleton HTTP Server".into(),
             address: "127.0.0.1".into(),
@@ -23,12 +27,8 @@ impl Server {
             debug: false,
             allow_trace: false,
             directory_indexes: vec!["index.htm".into(), "index.html".into()],
-            content_types: HashMap::new()
-        };
-        server.content_types.insert("html".into(), "text/html".into());
-        server.content_types.insert("txt".into(),  "text/plain".into());
-
-        server
+            content_types: content_types
+        }
     }
 
     pub fn configure_from_args(&mut self, args: Vec<String>) {
