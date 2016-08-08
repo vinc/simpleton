@@ -1,3 +1,4 @@
+use std::fmt;
 use std::io::prelude::*;
 use std::net::TcpStream;
 use std::path::{Path, PathBuf, Component};
@@ -25,7 +26,7 @@ pub struct Request {
 }
 
 impl Request {
-    /// Create a `Request`.
+    /// Create an HTTP message request.
     pub fn new(method: &str, host: &str, uri: &str) -> Request {
         let user_agent = "SimpletonHTTP/0.0.0";
         let version = "HTTP/1.1";
@@ -104,9 +105,10 @@ impl Request {
     pub fn send(&mut self, mut stream: &TcpStream) {
         let _ = stream.write(&self.to_string().into_bytes());
     }
+}
 
-    /// Get the raw HTTP request message.
-    pub fn to_string(&self) -> String {
+impl fmt::Display for Request {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut lines = vec![];
 
         // Request line
@@ -120,7 +122,7 @@ impl Request {
         // End of head
         lines.push("\n".into());
 
-        lines.join("\n")
+        write!(f, "{}", lines.join("\n"))
     }
 }
 
