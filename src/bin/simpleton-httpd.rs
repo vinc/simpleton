@@ -1,14 +1,12 @@
 extern crate time;
 extern crate simpleton;
 
-use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::prelude::*;
 use std::net::IpAddr;
 use std::net::{TcpListener, TcpStream};
 use std::path::PathBuf;
-use std::process::exit;
 use std::str;
 use std::thread;
 
@@ -23,14 +21,17 @@ fn main() {
 
     let binding = (server.address.as_str(), server.port);
     let listener = match TcpListener::bind(binding) {
-        Err(e)       => exit_on_error(e),
+        Err(e)       => { println!("Error: {}", e); return }
         Ok(listener) => listener
     };
     println!("Listening on {}:{}", server.address, server.port);
 
     for stream in listener.incoming() {
         match stream {
-            Err(e)     => exit_on_error(e),
+            Err(e)     => {
+                println!("Error: {}", e);
+                return
+            },
             Ok(stream) => {
                 let server = server.clone();
                 thread::spawn(move|| {
@@ -167,10 +168,4 @@ fn print_log(address: IpAddr, req: Request, res: Response) {
         req.version,
         res.status_code
     );
-}
-
-fn exit_on_error(e: std::io::Error) -> ! {
-    let mut stderr = std::io::stderr();
-    writeln!(&mut stderr, "Error: {}", e.description()).unwrap();
-    exit(1);
 }

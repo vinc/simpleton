@@ -1,9 +1,9 @@
 extern crate simpleton;
 
 use std::env;
+use std::io::BufReader;
 use std::io::prelude::*;
 use std::net::TcpStream;
-use std::io::BufReader;
 use std::str;
 
 use simpleton::http::Request;
@@ -28,7 +28,15 @@ fn main() {
 
     let mut req = Request::new("GET", &host, &path);
 
-    let stream = TcpStream::connect(host.as_str()).unwrap();
+    let mut address = host.clone();
+    if !host.contains(":") {
+        address.push_str(":80");
+    }
+
+    let stream = match TcpStream::connect(address.as_str()) {
+        Err(e)     => { println!("Error: {}", e); return },
+        Ok(stream) => stream
+    };
 
     req.send(&stream);
 
