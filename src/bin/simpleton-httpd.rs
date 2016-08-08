@@ -2,77 +2,30 @@ extern crate time;
 extern crate simpleton;
 
 use std::fs::File;
-use std::io::BufReader;
 use std::io::prelude::*;
 use std::net::IpAddr;
-use std::net::{TcpListener, TcpStream};
+use std::net::TcpStream;
 use std::path::PathBuf;
 use std::str;
-use std::thread;
 
 use simpleton::http::{Server, Request, Response};
 
 fn main() {
-    let mut server = Server::new();
+    let mut server = Server::new(handle_connection);
 
     server.configure_from_args(std::env::args().collect());
 
     println!("{}", server.name);
-
-    let binding = (server.address.as_str(), server.port);
-    let listener = match TcpListener::bind(binding) {
-        Err(e)       => { println!("Error: {}", e); return }
-        Ok(listener) => listener
-    };
     println!("Listening on {}:{}", server.address, server.port);
 
-    for stream in listener.incoming() {
-        match stream {
-            Err(e)     => {
-                println!("Error: {}", e);
-                return
-            },
-            Ok(stream) => {
-                let server = server.clone();
-                thread::spawn(move|| {
-                    handle_client(stream, server)
-                });
-            }
-        }
-    }
-
-    drop(listener);
+    server.listen();
 }
 
-fn handle_client(stream: TcpStream, server: Server) {
+fn handle_connection(req: Request, mut res: Response, stream: TcpStream, server: Server) {
     let address = match stream.peer_addr() {
         Err(_)        => return,
         Ok(peer_addr) => peer_addr.ip()
     };
-
-    // Read the request message
-    let mut lines = vec![];
-    let reader = BufReader::new(&stream);
-    for line in reader.lines() {
-        match line {
-            Err(_) => return,
-            Ok(line) => {
-                if line == "" {
-                    break
-                } else {
-                    lines.push(line)
-                }
-            }
-        }
-    }
-    let request_message = lines.join("\n");
-
-    let req = match Request::from_str(&request_message) {
-        Err(_)  => return,
-        Ok(req) => req
-    };
-
-    let mut res = Response::new();
 
     // Check HTTP method
     let mut methods = vec!["GET", "HEAD"];
@@ -99,7 +52,7 @@ fn handle_client(stream: TcpStream, server: Server) {
         //
         // (RFC 2616 9.8)
         res.headers.set("content-type", "message/http");
-        res.body = request_message.as_bytes().to_vec();
+        res.body = req.to_string().as_bytes().to_vec();
         res.send(&stream);
         print_log(address, req, res);
         return;
@@ -159,6 +112,7 @@ fn handle_client(stream: TcpStream, server: Server) {
 
     print_log(address, req, res);
 }
+
 
 fn read_file(path: &str, buf: &mut Vec<u8>) -> Result<(), String> {
     match File::open(path) {
