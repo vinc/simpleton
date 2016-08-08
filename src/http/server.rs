@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+/// HTTP server
 #[derive(Clone)]
 pub struct Server {
     pub root_path: String,

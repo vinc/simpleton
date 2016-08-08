@@ -4,15 +4,28 @@ use std::path::{Path, PathBuf, Component};
 
 use http::headers::Headers;
 
+/// HTTP request message
 #[derive(Clone)]
 pub struct Request {
+    /// The Method token indicates the method to be performed on the
+    /// resource identified by the Request-URI. The method is case-sensitive.
     pub method: String,
+
+    /// The Request-URI is a Uniform Resource Identifier and identifies
+    /// the resource upon which to apply the request.
     pub uri: String,
+
+    /// HTTP Version: `HTTP/<major>.<minor>`.
     pub version: String,
+
+    /// The Request-Header fields allow the client to pass additional
+    /// information about the request, and about the client itself, to
+    /// the server.
     pub headers: Headers
 }
 
 impl Request {
+    /// Create a `Request`.
     pub fn new(method: &str, host: &str, uri: &str) -> Request {
         let user_agent = "SimpletonHTTP/0.0.0";
         let version = "HTTP/1.1";
@@ -29,6 +42,7 @@ impl Request {
         req
     }
 
+    /// Create a `Request` from a raw HTTP request message.
     pub fn from_str(message: &str) -> Result<Request, String> {
         let mut lines = message.lines();
 
@@ -66,6 +80,7 @@ impl Request {
         Ok(req)
     }
 
+    /// Get the normalized URI of a `Request`.
     pub fn get_uri(&self) -> String {
         let mut components = vec![];
 
@@ -85,10 +100,12 @@ impl Request {
         path.to_str().unwrap().to_string()
     }
 
+    /// Send the request to the server through a `TcpStream`.
     pub fn send(&mut self, mut stream: &TcpStream) {
         let _ = stream.write(&self.to_string().into_bytes());
     }
 
+    /// Get the raw HTTP request message.
     pub fn to_string(&self) -> String {
         let mut lines = vec![];
 

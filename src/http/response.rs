@@ -5,6 +5,7 @@ use std::net::TcpStream;
 
 use http::headers::Headers;
 
+/// HTTP response message
 #[derive(Clone)]
 pub struct Response {
     pub status_code: u16,
