@@ -3,9 +3,9 @@ use std::net::TcpStream;
 use http::request::Request;
 use http::response::Response;
 
-pub fn handler(req: Request, res: Response, stream: TcpStream) {
+pub fn handler(req: Request, res: Response, stream: TcpStream) -> Response {
     let address = match stream.peer_addr() {
-        Err(_)        => return,
+        Err(_)        => return res,
         Ok(peer_addr) => peer_addr.ip()
     };
 
@@ -18,4 +18,6 @@ pub fn handler(req: Request, res: Response, stream: TcpStream) {
         req.version,
         res.status_code
     );
+
+    res
 }

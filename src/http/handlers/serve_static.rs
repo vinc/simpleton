@@ -7,7 +7,7 @@ use std::str;
 use http::request::Request;
 use http::response::Response;
 
-pub fn handler(req: Request, mut res: Response, stream: TcpStream) {
+pub fn handler(req: Request, mut res: Response, stream: TcpStream) -> Response {
     // FIXME: use handler config instead of server config
     let server = res.server.clone();
 
@@ -20,7 +20,7 @@ pub fn handler(req: Request, mut res: Response, stream: TcpStream) {
         res.status_code = 501;
         res.status_message = "Not Implemented".into();
         res.send(&stream);
-        return;
+        return res;
     }
 
     if req.method == "TRACE" {
@@ -37,7 +37,7 @@ pub fn handler(req: Request, mut res: Response, stream: TcpStream) {
         res.headers.set("content-type", "message/http");
         res.body = req.to_string().as_bytes().to_vec();
         res.send(&stream);
-        return;
+        return res;
     }
 
     // Build local file path from URI
@@ -52,7 +52,7 @@ pub fn handler(req: Request, mut res: Response, stream: TcpStream) {
             res.status_message = "Moved Permanently".into();
             res.headers.set("location", &redirect_uri);
             res.send(&stream);
-            return;
+            return res;
         }
 
         // Directory index file
@@ -77,7 +77,7 @@ pub fn handler(req: Request, mut res: Response, stream: TcpStream) {
         res.status_code = 404;
         res.status_message = "Not Found".into();
         res.send(&stream);
-        return;
+        return res;
     }
 
     if req.method == "HEAD" {
@@ -89,6 +89,8 @@ pub fn handler(req: Request, mut res: Response, stream: TcpStream) {
     } else { // GET method
         res.send(&stream);
     }
+
+    res
 }
 
 fn read_file(path: &str, buf: &mut Vec<u8>) -> Result<(), String> {

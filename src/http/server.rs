@@ -11,7 +11,7 @@ use http::response::Response;
 /// HTTP server
 #[derive(Clone)]
 pub struct Server {
-    pub handlers: Vec<fn(Request, Response, TcpStream)>,
+    pub handlers: Vec<fn(Request, Response, TcpStream) -> Response>,
     pub root_path: String,
     pub name: String,
     pub address: String,
@@ -41,7 +41,7 @@ impl Server {
         }
     }
 
-    pub fn add_handler(&mut self, f: fn(Request, Response, TcpStream)) {
+    pub fn add_handler(&mut self, f: fn(Request, Response, TcpStream) -> Response) {
         self.handlers.push(f);
     }
 
@@ -114,14 +114,12 @@ fn handle_client(stream: TcpStream, server: Server) {
         Ok(req) => req
     };
 
-    let res = Response::new(server.clone());
+    let mut res = Response::new(server.clone());
 
     for handler in &server.handlers {
-        let req = req.clone();
-        let res = res.clone();
         match stream.try_clone() {
             Ok(stream) => {
-                handler(req, res, stream);
+                res = handler(req.clone(), res.clone(), stream);
             },
             Err(e) => { panic!("{}", e) }
         }
