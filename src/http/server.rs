@@ -11,7 +11,7 @@ use http::response::Response;
 /// HTTP server
 #[derive(Clone)]
 pub struct Server {
-    pub handlers: Vec<fn(Request, Response, TcpStream, Server)>,
+    pub handlers: Vec<fn(Request, Response, TcpStream)>,
     pub root_path: String,
     pub name: String,
     pub address: String,
@@ -41,7 +41,7 @@ impl Server {
         }
     }
 
-    pub fn add_handler(&mut self, f: fn(Request, Response, TcpStream, Server)) {
+    pub fn add_handler(&mut self, f: fn(Request, Response, TcpStream)) {
         self.handlers.push(f);
     }
 
@@ -63,22 +63,6 @@ impl Server {
         }
     }
 
-    /*
-    fn create(f: fn(Request, Response)) -> Server {
-        Server {
-            handle: f
-        }
-    }
-    fn listen(self) {
-        let req = Request::new("/");
-        let res = Response::new();
-        (self.handle)(req, res);
-
-        let req = Request::new("/yooo");
-        let res = Response::new();
-        (self.handle)(req, res);
-    }
-    */
     pub fn listen(self) {
         let binding = (self.address.as_str(), self.port);
 
@@ -107,63 +91,57 @@ impl Server {
 
 }
 
-    fn handle_client(stream: TcpStream, server: Server) {
-        // Read the request message
-        let mut lines = vec![];
-        let mut reader = BufReader::new(&stream);
-        for line in reader.by_ref().lines() {
-            match line {
-                Err(_) => return,
-                Ok(line) => {
-                    if line == "" {
-                        break
-                    } else {
-                        lines.push(line)
-                    }
+fn handle_client(stream: TcpStream, server: Server) {
+    // Read the request message
+    let mut lines = vec![];
+    let mut reader = BufReader::new(&stream);
+    for line in reader.by_ref().lines() {
+        match line {
+            Err(_) => return,
+            Ok(line) => {
+                if line == "" {
+                    break
+                } else {
+                    lines.push(line)
                 }
             }
         }
-        let request_message = lines.join("\n");
+    }
+    let request_message = lines.join("\n");
 
-        let req = match Request::from_str(&request_message) {
-            Err(_)  => return,
-            Ok(req) => req
-        };
+    let req = match Request::from_str(&request_message, server.clone()) {
+        Err(_)  => return,
+        Ok(req) => req
+    };
 
-        let res = Response::new();
+    let res = Response::new(server.clone());
 
-        for handler in &server.handlers {
-            let server = server.clone();
-            let req = req.clone();
-            let res = res.clone();
-            match stream.try_clone() {
-                Ok(stream) => {
-                    handler(req, res, stream, server);
-                },
-                Err(e) => { panic!("{}", e) }
-            }
+    for handler in &server.handlers {
+        let req = req.clone();
+        let res = res.clone();
+        match stream.try_clone() {
+            Ok(stream) => {
+                handler(req, res, stream);
+            },
+            Err(e) => { panic!("{}", e) }
         }
     }
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
-    use http::request::Request;
-    use http::response::Response;
-
-    fn handle_client(req: Request, res: Response) { }
 
     #[test]
     fn test_new() {
-        let server = Server::new(handle_client);
+        let server = Server::new();
 
         assert_eq!(server.port, 3000);
     }
 
     #[test]
     fn test_configure_from_args() {
-        let mut server = Server::new(handle_client);
+        let mut server = Server::new();
 
         assert_eq!(server.debug, false);
         server.configure_from_args(vec!["--debug".into()]);

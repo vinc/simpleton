@@ -6,9 +6,10 @@ use std::str;
 
 use http::request::Request;
 use http::response::Response;
-use http::server::Server;
 
-pub fn handler(req: Request, mut res: Response, stream: TcpStream, server: Server) {
+pub fn handler(req: Request, mut res: Response, stream: TcpStream) {
+    let server = res.server.clone();
+
     // Check HTTP method
     let mut methods = vec!["GET", "HEAD"];
     if server.allow_trace {

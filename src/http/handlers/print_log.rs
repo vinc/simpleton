@@ -2,9 +2,8 @@ use std::net::TcpStream;
 
 use http::request::Request;
 use http::response::Response;
-use http::server::Server;
 
-pub fn handler(req: Request, mut res: Response, stream: TcpStream, server: Server) {
+pub fn handler(req: Request, res: Response, stream: TcpStream) {
     let address = match stream.peer_addr() {
         Err(_)        => return,
         Ok(peer_addr) => peer_addr.ip()

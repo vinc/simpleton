@@ -5,6 +5,7 @@ use std::io::prelude::*;
 use std::net::TcpStream;
 
 use http::headers::Headers;
+use http::server::Server;
 
 /// HTTP response message
 #[derive(Clone)]
@@ -33,12 +34,14 @@ pub struct Response {
 
     /// Boolean indicating if the message head (status-line + headers) has
     /// been sent.
-    head_sent: bool
+    head_sent: bool,
+
+    pub server: Server
 }
 
 impl Response {
     /// Create an HTTP message response.
-    pub fn new() -> Response {
+    pub fn new(server: Server) -> Response {
         let time = time::now();
         let date = time::strftime("%a, %d %b %y %T %Z", &time).unwrap();
 
@@ -48,7 +51,8 @@ impl Response {
             date: date,
             head_sent: false,
             body: Vec::new(),
-            headers: Headers::new()
+            headers: Headers::new(),
+            server: server
         }
     }
 
@@ -108,16 +112,20 @@ impl fmt::Display for Response {
 mod tests {
     use super::*;
 
+    use http::server::Server;
+
     #[test]
     fn test_new() {
-        let res = Response::new();
+        let server = Server::new();
+        let res = Response::new(server);
 
         assert_eq!(res.status_code, 200);
     }
 
     #[test]
     fn test_to_string() {
-        let res = Response::new();
+        let server = Server::new();
+        let res = Response::new(server);
 
         assert!(res.to_string().starts_with("HTTP/1.1 200 Ok\n"));
     }
