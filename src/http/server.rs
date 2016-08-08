@@ -11,12 +11,13 @@ use http::response::Response;
 /// HTTP server
 #[derive(Clone)]
 pub struct Server {
-    pub handlers: Vec<fn(Request, Response, TcpStream) -> Response>,
-    pub root_path: String,
     pub name: String,
     pub address: String,
     pub port: u16,
-    pub debug: bool,
+    pub handlers: Vec<fn(Request, Response, TcpStream) -> Response>,
+
+    // TODO: All of that could be in `serve_static` handler
+    pub root_path: String,
     pub allow_trace: bool,
     pub directory_indexes: Vec<String>,
     pub content_types: HashMap<String, String>
@@ -34,7 +35,6 @@ impl Server {
             name: "Simpleton HTTP Server".into(),
             address: "127.0.0.1".into(),
             port: 3000,
-            debug: false,
             allow_trace: false,
             directory_indexes: vec!["index.htm".into(), "index.html".into()],
             content_types: content_types
@@ -47,10 +47,6 @@ impl Server {
 
     pub fn configure_from_args(&mut self, args: Vec<String>) {
         let args: Vec<_> = args.iter().filter(|&arg| {
-            if arg == "--debug" {
-                self.debug = true;
-            }
-
             if arg == "--allow-trace" {
                 self.allow_trace = true;
             }
@@ -92,7 +88,7 @@ impl Server {
 }
 
 fn handle_client(stream: TcpStream, server: Server) {
-    // Read the request message
+    // Read raw request message
     let mut lines = vec![];
     let mut reader = BufReader::new(&stream);
     for line in reader.by_ref().lines() {
@@ -109,13 +105,16 @@ fn handle_client(stream: TcpStream, server: Server) {
     }
     let request_message = lines.join("\n");
 
+    // Create Request message
     let req = match Request::from_str(&request_message) {
         Err(_)  => return,
         Ok(req) => req
     };
 
+    // Create Response message
     let mut res = Response::new(server.clone());
 
+    // Call all handlers
     for handler in &server.handlers {
         match stream.try_clone() {
             Ok(stream) => {
@@ -141,8 +140,8 @@ mod tests {
     fn test_configure_from_args() {
         let mut server = Server::new();
 
-        assert_eq!(server.debug, false);
-        server.configure_from_args(vec!["--debug".into()]);
-        assert_eq!(server.debug, true);
+        assert_eq!(server.allow_trace, false);
+        server.configure_from_args(vec!["--allow-trace".into()]);
+        assert_eq!(server.allow_trace, true);
     }
 }

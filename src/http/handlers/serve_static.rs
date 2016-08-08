@@ -7,6 +7,8 @@ use std::str;
 use http::request::Request;
 use http::response::Response;
 
+
+/// Server static files.
 pub fn handler(req: Request, mut res: Response, stream: TcpStream) -> Response {
     // FIXME: use handler config instead of server config
     let server = res.server.clone();
