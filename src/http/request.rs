@@ -22,7 +22,9 @@ pub struct Request {
     /// The Request-Header fields allow the client to pass additional
     /// information about the request, and about the client itself, to
     /// the server.
-    pub headers: Headers
+    pub headers: Headers,
+
+    pub ip: String // TODO: replace it by Option<String>
 }
 
 impl Request {
@@ -34,7 +36,8 @@ impl Request {
             method:  method.into(),
             uri:     uri.into(),
             version: version.into(),
-            headers: Headers::new()
+            headers: Headers::new(),
+            ip: String::new() // TODO: replace it by `None`
         };
         req.headers.set("host".into(), host.into());
         req.headers.set("user-agent".into(), user_agent.into());
@@ -60,7 +63,8 @@ impl Request {
             method:  req_line_fields[0].into(),
             uri:     req_line_fields[1].into(),
             version: req_line_fields[2].into(),
-            headers: Headers::new()
+            headers: Headers::new(),
+            ip: String::new() // TODO: replace it by `None`
         };
 
         // Parse the headers

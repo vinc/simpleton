@@ -106,10 +106,18 @@ fn handle_client(stream: TcpStream, server: Server) {
     let request_message = lines.join("\n");
 
     // Create Request message
-    let req = match Request::from_str(&request_message) {
+    let mut req = match Request::from_str(&request_message) {
         Err(_)  => return,
         Ok(req) => req
     };
+
+    // Set the IP address of the client in Request
+    let ip = match stream.peer_addr() {
+        Err(_)        => return,
+        Ok(peer_addr) => peer_addr.ip()
+    };
+    req.ip = ip.to_string();
+
 
     // Create Response message
     let mut res = Response::new(server.clone());
