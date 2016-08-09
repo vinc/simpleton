@@ -85,10 +85,11 @@ impl Response {
         let _ = stream.write(&self.body);
     }
 
-    pub fn send(&mut self, chunk: Vec<u8>) {
+    pub fn send(&mut self, chunk: &[u8]) {
         // TODO: prevent from calling multiple times or after `res.end()`?
-        self.body.extend(chunk);
-        self.end();
+        // TODO: do we need a `Vec<u8>` if it's used only once?
+        self.body.extend(chunk.to_vec());
+        self.end(); // TODO: remove this if it can be called multiple times
     }
 
     pub fn end(&mut self) {

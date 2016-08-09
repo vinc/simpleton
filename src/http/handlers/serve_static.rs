@@ -35,7 +35,7 @@ pub fn handler(req: Request, mut res: Response) -> Response {
         //
         // (RFC 2616 9.8)
         res.headers.set("content-type", "message/http");
-        res.send(req.to_string().as_bytes().to_vec());
+        res.send(req.to_string().as_bytes());
         return res;
     }
 
@@ -86,13 +86,13 @@ pub fn handler(req: Request, mut res: Response) -> Response {
         //
         // (RFC 2616 9.4)
 
-        // This is done automatically by `res.send(body)`;
+        // This is done automatically by `res.send(&body)`;
         let content_length = body.len().to_string();
         res.headers.set("content-length", &content_length);
 
         res.end();
     } else { // GET method
-        res.send(body);
+        res.send(&body);
     }
 
     res
