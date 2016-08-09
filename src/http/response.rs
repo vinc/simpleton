@@ -20,11 +20,7 @@ pub struct Response {
 
     /// HTTP/1.1 clients and servers MUST only generate the RFC 1123
     /// format for representing HTTP-date values in header fields.
-    pub date: String,
-
-    /// The message-body (if any) of an HTTP message is used to carry the
-    /// entity-body associated with the request or response.
-    pub body: Vec<u8>,
+    pub date: String, // TODO: replace it by `Option<String>`
 
     /// The response-header fields allow the server to pass additional
     /// information about the response which cannot be placed in the
@@ -35,6 +31,10 @@ pub struct Response {
     /// Boolean indicating if the message head (status-line + headers) has
     /// been sent.
     head_sent: bool,
+
+    /// The message-body (if any) of an HTTP message is used to carry the
+    /// entity-body associated with the request or response.
+    body: Vec<u8>,
 
     pub server: Server
 }
@@ -48,17 +48,17 @@ impl Response {
         Response {
             status_code: 200,
             status_message: "Ok".into(),
-            date: date,
+            date: date, // TODO: set it to None
             head_sent: false,
-            body: Vec::new(),
             headers: Headers::new(),
+            body: Vec::new(),
             server: server
         }
     }
 
-    /// Send the status-line and the headers of the response to the client
-    /// through a `TcpStream`.
-    pub fn send_head(&mut self, mut stream: &TcpStream) {
+    /// Write to `stream` the status-line and the headers
+    /// of the response message.
+    pub fn write_head(&mut self, mut stream: &TcpStream) {
         // Set headers
         if !self.headers.contains_key("content-length") {
             let content_length = self.body.len().to_string();
@@ -74,15 +74,28 @@ impl Response {
         self.head_sent = true;
     }
 
-    /// Send the response to the client through a `TcpStream`.
+    /// Write to `stream` the response message.
     /// 
-    /// This method will first send the status-line and the headers if they
-    /// have not been already sent, then it will send the message body.
-    pub fn send(&mut self, mut stream: &TcpStream) {
+    /// This method will first write the status-line and the headers
+    /// if it has not already been done, then it will write the message body.
+    pub fn write(&mut self, mut stream: &TcpStream) {
         if !self.head_sent {
-            self.send_head(&stream);
+            self.write_head(&stream);
         }
         let _ = stream.write(&self.body);
+    }
+
+    pub fn send(&mut self, chunk: Vec<u8>) {
+        // TODO: prevent from calling multiple times or after `res.end()`?
+        self.body.extend(chunk);
+        self.end();
+    }
+
+    pub fn end(&mut self) {
+        // TODO: prevent from calling multiple times?
+        let time = time::now();
+        let date = time::strftime("%a, %d %b %y %T %Z", &time).unwrap();
+        self.date = date;
     }
 }
 

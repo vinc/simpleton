@@ -14,7 +14,7 @@ pub struct Server {
     pub name: String,
     pub address: String,
     pub port: u16,
-    pub handlers: Vec<fn(Request, Response, TcpStream) -> Response>,
+    pub handlers: Vec<fn(Request, Response) -> Response>,
 
     // TODO: All of that could be in `serve_static` handler
     pub root_path: String,
@@ -41,7 +41,7 @@ impl Server {
         }
     }
 
-    pub fn add_handler(&mut self, f: fn(Request, Response, TcpStream) -> Response) {
+    pub fn add_handler(&mut self, f: fn(Request, Response) -> Response) {
         self.handlers.push(f);
     }
 
@@ -126,7 +126,8 @@ fn handle_client(stream: TcpStream, server: Server) {
     for handler in &server.handlers {
         match stream.try_clone() {
             Ok(stream) => {
-                res = handler(req.clone(), res.clone(), stream);
+                res = handler(req.clone(), res.clone());
+                res.write(&stream);
             },
             Err(e) => { panic!("{}", e) }
         }

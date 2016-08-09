@@ -26,7 +26,7 @@ fn main() {
     server.listen();
 }
 
-fn my_handler(req: Request, res: Response, stream: TcpStream) -> Response {
-    // TODO
+fn my_handler(req: Request, res: Response) -> Response {
+    res.send("Hello, World!".as_bytes().to_vec());
 }
 ```

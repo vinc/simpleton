@@ -1,15 +1,13 @@
 use std::fs::File;
 use std::io::prelude::*;
-use std::net::TcpStream;
 use std::path::PathBuf;
 use std::str;
 
 use http::request::Request;
 use http::response::Response;
 
-
 /// Server static files.
-pub fn handler(req: Request, mut res: Response, stream: TcpStream) -> Response {
+pub fn handler(req: Request, mut res: Response) -> Response {
     // FIXME: use handler config instead of server config
     let server = res.server.clone();
 
@@ -21,7 +19,7 @@ pub fn handler(req: Request, mut res: Response, stream: TcpStream) -> Response {
     if let None = methods.iter().find(|&&method| method == req.method) {
         res.status_code = 501;
         res.status_message = "Not Implemented".into();
-        res.send(&stream);
+        res.end();
         return res;
     }
 
@@ -37,8 +35,7 @@ pub fn handler(req: Request, mut res: Response, stream: TcpStream) -> Response {
         //
         // (RFC 2616 9.8)
         res.headers.set("content-type", "message/http");
-        res.body = req.to_string().as_bytes().to_vec();
-        res.send(&stream);
+        res.send(req.to_string().as_bytes().to_vec());
         return res;
     }
 
@@ -53,7 +50,7 @@ pub fn handler(req: Request, mut res: Response, stream: TcpStream) -> Response {
             res.status_code = 301;
             res.status_message = "Moved Permanently".into();
             res.headers.set("location", &redirect_uri);
-            res.send(&stream);
+            res.end();
             return res;
         }
 
@@ -75,10 +72,11 @@ pub fn handler(req: Request, mut res: Response, stream: TcpStream) -> Response {
     }
 
     // Read file
-    if let Err(_) = read_file(path.to_str().unwrap(), &mut res.body) {
+    let mut body = vec![];
+    if let Err(_) = read_file(path.to_str().unwrap(), &mut body) {
         res.status_code = 404;
         res.status_message = "Not Found".into();
-        res.send(&stream);
+        res.end();
         return res;
     }
 
@@ -87,9 +85,14 @@ pub fn handler(req: Request, mut res: Response, stream: TcpStream) -> Response {
         // return a message-body in the response.
         //
         // (RFC 2616 9.4)
-        res.send_head(&stream);
+
+        // This is done automatically by `res.send(body)`;
+        let content_length = body.len().to_string();
+        res.headers.set("content-length", &content_length);
+
+        res.end();
     } else { // GET method
-        res.send(&stream);
+        res.send(body);
     }
 
     res
