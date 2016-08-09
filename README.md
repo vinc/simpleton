@@ -26,7 +26,9 @@ fn main() {
     server.listen();
 }
 
-fn my_handler(req: Request, res: Response) -> Response {
+fn my_handler(req: Request, mut res: Response) -> Response {
     res.send("Hello, World!".as_bytes());
+
+    res
 }
 ```

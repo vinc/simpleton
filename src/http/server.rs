@@ -118,10 +118,29 @@ fn handle_client(stream: TcpStream, server: Server) {
 mod tests {
     use super::*;
 
+    use http::request::Request;
+    use http::response::Response;
+
+    #[warn(unused_variables)]
+    fn custom_handler(req: Request, mut res: Response) -> Response {
+        res.send("Hello, World!".as_bytes());
+
+        res
+    }
+
     #[test]
     fn test_new() {
         let server = Server::new();
 
         assert!(server.handlers.is_empty());
+    }
+
+    #[test]
+    fn test_add_handler() {
+        let mut server = Server::new();
+
+        assert_eq!(server.handlers.len(), 0);
+        server.add_handler(custom_handler);
+        assert_eq!(server.handlers.len(), 1);
     }
 }
