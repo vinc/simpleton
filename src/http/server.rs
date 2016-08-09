@@ -12,8 +12,6 @@ use http::response::Response;
 #[derive(Clone)]
 pub struct Server {
     pub name: String,
-    pub address: String,
-    pub port: u16,
     pub handlers: Vec<fn(Request, Response) -> Response>,
 
     // TODO: All of that could be in `serve_static` handler
@@ -33,8 +31,6 @@ impl Server {
             handlers: Vec::new(),
             root_path: ".".into(),
             name: "Simpleton HTTP Server".into(),
-            address: "127.0.0.1".into(),
-            port: 3000,
             allow_trace: false,
             directory_indexes: vec!["index.htm".into(), "index.html".into()],
             content_types: content_types
@@ -45,23 +41,7 @@ impl Server {
         self.handlers.push(f);
     }
 
-    pub fn configure_from_args(&mut self, args: Vec<String>) {
-        let args: Vec<_> = args.iter().filter(|&arg| {
-            if arg == "--allow-trace" {
-                self.allow_trace = true;
-            }
-
-            !arg.starts_with("--")
-        }).collect();
-
-        if args.len() > 1 {
-            //self.root_path = args[1]; // FIXME
-        }
-    }
-
-    pub fn listen(self) {
-        let binding = (self.address.as_str(), self.port);
-
+    pub fn listen(self, binding: &str) {
         let listener = match TcpListener::bind(binding) {
             Err(e)       => { println!("Error: {}", e); return }
             Ok(listener) => listener
@@ -142,15 +122,6 @@ mod tests {
     fn test_new() {
         let server = Server::new();
 
-        assert_eq!(server.port, 3000);
-    }
-
-    #[test]
-    fn test_configure_from_args() {
-        let mut server = Server::new();
-
-        assert_eq!(server.allow_trace, false);
-        server.configure_from_args(vec!["--allow-trace".into()]);
-        assert_eq!(server.allow_trace, true);
+        assert!(server.handlers.is_empty());
     }
 }
