@@ -26,7 +26,7 @@ fn main() {
     let host = &args[1];
     let path = &args[2];
 
-    let mut req = Request::new("GET", &host, &path);
+    let mut req = Request::new("GET", host, path);
 
     let mut address = host.clone();
     if !host.contains(":") {

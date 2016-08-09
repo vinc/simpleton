@@ -80,13 +80,13 @@ impl Response {
     /// if it has not already been done, then it will write the message body.
     pub fn write(&mut self, mut stream: &TcpStream) {
         if !self.head_sent {
-            self.write_head(&stream);
+            self.write_head(stream);
         }
         let _ = stream.write(&self.body);
     }
 
     pub fn send(&mut self, chunk: &[u8]) {
-        // TODO: prevent from calling multiple times or after `res.end()`?
+        // TODO: prevent from calling after `res.end()`?
         // TODO: do we need a `Vec<u8>` if it's used only once?
         self.body.extend(chunk.to_vec());
         self.end(); // TODO: remove this if it can be called multiple times
